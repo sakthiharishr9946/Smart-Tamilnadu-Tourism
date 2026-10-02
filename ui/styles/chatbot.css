@@ -1,0 +1,120 @@
+/* =========================================================
+   CHATBOT
+   Custom bubble layout — Streamlit's st.chat_message doesn't support
+   right-aligned user messages, so the transcript is hand-built HTML
+   instead, matching the app's editorial theme.
+   ========================================================= */
+
+.chat-window {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    margin: 1.5rem 0 1.25rem;
+}
+
+.chat-empty {
+    color: var(--text-tertiary);
+    font-size: 14px;
+    padding: 0.5rem 0 1rem;
+}
+
+.chat-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.6rem;
+}
+
+.chat-row.user {
+    flex-direction: row-reverse;
+}
+
+.chat-avatar {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+}
+
+.chat-row.user .chat-avatar {
+    background: var(--accent-gradient);
+    border: none;
+}
+
+.chat-bubble {
+    max-width: 72%;
+    padding: 0.75rem 1.05rem;
+
+    font-size: 14.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+
+    animation: fadeInUp 0.35s var(--ease);
+}
+
+.chat-bubble.assistant {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px 18px 18px 18px;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
+}
+
+.chat-bubble.user {
+    background: var(--accent-gradient);
+    border-radius: 18px 4px 18px 18px;
+    color: #ffffff;
+}
+
+
+/* =========================================================
+   CHAT QUICK-PROMPT CHIPS
+   Plain <a href="?chat_prompt=..."> tiles, same click-through
+   pattern used by the scroll rows and ranked list.
+   ========================================================= */
+
+.chat-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+
+    margin: 0.25rem 0 1.5rem;
+}
+
+.chat-chip {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+
+    transition: border-color 0.2s var(--ease), color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.chat-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+
+@media (max-width: 700px) {
+    .chat-bubble {
+        max-width: 88%;
+    }
+}

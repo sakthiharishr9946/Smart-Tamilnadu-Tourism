@@ -1,0 +1,1621 @@
+/* =========================================================
+   SMART TAMILNADU TOURISM
+   Main Application Styles — Apple-inspired light theme
+   ========================================================= */
+
+
+/* =========================================================
+   MOTION PRIMITIVES
+   ========================================================= */
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+
+/* =========================================================
+   SCROLL REVEAL
+   Elements marked class="reveal" stay fully visible until the
+   scroll-reveal script confirms it can drive them (body.js-scroll-ready),
+   so nothing breaks if the script is ever blocked.
+   ========================================================= */
+
+body.js-scroll-ready .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+}
+
+body.js-scroll-ready .reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   HERO SHOWCASE
+   Fixed-layout gradient cards (adapted from a Uiverse.io hover-cascade
+   design): the category glyph sits statically centered, and rating /
+   category / district reveal as stacked accent tiles on hover. Nothing
+   here is positioned relative to a rotation axis, so — unlike the earlier
+   3D ring — it cannot drift out of alignment.
+   ========================================================= */
+
+.hs-row {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+
+    margin: 2.5rem 0;
+    padding: 0.6rem 0.4rem 1rem;
+
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+.hs-row::-webkit-scrollbar {
+    height: 6px;
+}
+
+.hs-row::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+}
+
+.hs-card {
+    position: relative;
+    flex: 0 0 auto;
+    width: 168px;
+    height: 220px;
+
+    display: block;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+
+    text-decoration: none;
+
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+}
+
+.hs-card:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: var(--shadow-md), var(--shadow-lg);
+}
+
+.hs-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 100% 107%, #5eead4 0%, #2dd4bf 30%, #0f766e 65%, #0b5c56 100%);
+}
+
+.hs-name {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0.9rem 1rem 0;
+    z-index: 2;
+
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #ffffff;
+    text-shadow: 0 1px 6px rgba(11, 92, 86, 0.45);
+}
+
+.hs-logo {
+    position: absolute;
+    right: 50%;
+    bottom: 50%;
+    transform: translate(50%, 50%);
+    z-index: 1;
+
+    font-size: 34px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(11, 92, 86, 0.35));
+
+    transition: all 0.5s var(--ease);
+}
+
+.hs-card:hover .hs-logo {
+    transform: translate(0, 0);
+    bottom: 14px;
+    right: 14px;
+    font-size: 22px;
+}
+
+.hs-box {
+    position: absolute;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 8px;
+
+    background: rgba(255, 255, 255, 0.32);
+    border-top: 2px solid rgba(255, 255, 255, 0.85);
+    border-right: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 10% 13% 42% 0% / 10% 12% 75% 0%;
+    box-shadow: -6px 6px 22px rgba(11, 92, 86, 0.22);
+
+    transform-origin: bottom left;
+    transition: bottom 0.5s var(--ease), left 0.5s var(--ease);
+}
+
+.hs-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.4s var(--ease);
+}
+
+/* Reveal the gradient as soon as the card is hovered — gating it behind a
+   second, precise hover on the small tile itself made the color almost
+   undiscoverable. */
+.hs-card:hover .hs-box::before {
+    opacity: 1;
+}
+
+.hs-icon {
+    position: relative;
+    font-size: 12px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.hs-box1 {
+    width: 68%;
+    height: 68%;
+    bottom: -68%;
+    left: -68%;
+}
+
+.hs-box1::before {
+    background: radial-gradient(circle at 30% 107%, #fde68a 0%, #f59e0b 60%, #b45309 100%);
+}
+
+.hs-box2 {
+    width: 46%;
+    height: 46%;
+    bottom: -46%;
+    left: -46%;
+    transition-delay: 0.08s;
+}
+
+.hs-box2::before {
+    background: radial-gradient(circle at 30% 107%, #99f6e4 0%, #14b8a6 90%);
+}
+
+.hs-box3 {
+    width: 26%;
+    height: 26%;
+    bottom: -26%;
+    left: -26%;
+    transition-delay: 0.16s;
+}
+
+.hs-box3::before {
+    background: radial-gradient(circle at 30% 107%, #93c5fd 0%, #1d4ed8 90%);
+}
+
+.hs-box4 {
+    width: 10%;
+    height: 10%;
+    bottom: -10%;
+    left: -10%;
+    transition-delay: 0.24s;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.hs-card:hover .hs-box {
+    bottom: -1px;
+    left: -1px;
+}
+
+@media (max-width: 900px) {
+    .hs-row {
+        display: none;
+    }
+}
+
+
+/* =========================================================
+   GLOBAL APPLICATION
+   ========================================================= */
+
+.stApp {
+    background: var(--bg);
+}
+
+.main {
+    padding: 0 2rem 2rem 2rem;
+}
+
+.block-container {
+    max-width: 1400px;
+    padding-top: 1.5rem;
+    animation: fadeIn 0.5s var(--ease);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+p, span, div, label {
+    color: inherit;
+}
+
+
+/* =========================================================
+   EDITORIAL HERO (Explore / home page)
+   Plain page background, no card chrome — large type + a thin rule
+   carry the "premium" weight instead of a boxed gradient panel.
+   ========================================================= */
+
+.hero-eyebrow {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.hero-editorial-title {
+    font-size: 60px;
+    line-height: 1.04;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+}
+
+.hero-editorial-rule {
+    width: 64px;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--accent-gradient);
+    margin-bottom: 1.5rem;
+}
+
+.hero-editorial-subtitle {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 46ch;
+}
+
+@media (max-width: 900px) {
+    .hero-editorial-title {
+        font-size: 40px;
+    }
+}
+
+
+/* =========================================================
+   PAGE HERO (Recommendations / Itinerary / Budget / Chatbot /
+   Place details)
+   Same editorial voice as the home hero, sized down for pages
+   that are a single task rather than a landing surface.
+   ========================================================= */
+
+.page-hero-title {
+    font-size: 40px;
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+    .page-hero-title {
+        font-size: 30px;
+    }
+}
+
+
+/* =========================================================
+   RANKED LIST
+   Numbered, divider-separated rows used in place of a bordered
+   card grid for editorial "top N" listings.
+   ========================================================= */
+
+.rank-list {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.5rem;
+}
+
+.rank-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+
+    padding: 1.5rem 0.25rem;
+    border-bottom: 1px solid var(--border);
+
+    text-decoration: none;
+    color: inherit;
+
+    transition: background 0.2s var(--ease);
+}
+
+.rank-item:first-child {
+    border-top: 1px solid var(--border);
+}
+
+.rank-item:hover {
+    background: var(--surface-alt);
+}
+
+.rank-number {
+    flex-shrink: 0;
+    width: 2.5ch;
+
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-tertiary);
+}
+
+.rank-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.rank-name {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.rank-meta {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.rank-desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.rank-badges {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.rank-rating {
+    font-size: 14px;
+    font-weight: 700;
+    color: #b45309;
+    white-space: nowrap;
+}
+
+.rank-rating-empty {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+}
+
+@media (max-width: 700px) {
+    .rank-item {
+        gap: 1rem;
+    }
+
+    .rank-badges {
+        align-items: flex-start;
+    }
+}
+
+
+/* =========================================================
+   GHOST TOOLBAR
+   Location controls read as a slim inline toolbar rather than three
+   separate boxed buttons stacked in their own panel.
+   ========================================================= */
+
+.ghost-toolbar-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 2.5rem 0 0.75rem 0;
+}
+
+
+/* =========================================================
+   HORIZONTAL SCROLL ROWS
+   ========================================================= */
+
+.hrow {
+    margin-bottom: 2.25rem;
+}
+
+.hrow-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    margin-bottom: 0.9rem;
+}
+
+.hrow-track {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+}
+
+.hrow-track::-webkit-scrollbar {
+    height: 6px;
+}
+
+.hrow-track::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+}
+
+.hrow-tile {
+    flex: 0 0 auto;
+    width: 200px;
+
+    display: block;
+    text-decoration: none;
+    scroll-snap-align: start;
+
+    padding: 1.4rem 1.2rem;
+    border-radius: var(--radius-lg);
+
+    background: linear-gradient(160deg, var(--surface), var(--accent-soft));
+    border: 1px solid var(--border);
+
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.hrow-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+}
+
+.hrow-tile-visual {
+    font-size: 34px;
+    margin-bottom: 0.6rem;
+}
+
+.hrow-tile-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    margin-bottom: 0.15rem;
+}
+
+.hrow-tile-meta {
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.hrow-tile-blurb {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+
+/* =========================================================
+   SECTION TITLES
+   ========================================================= */
+
+.section-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+
+    color: var(--text-primary);
+
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+
+    animation: fadeInUp 0.5s var(--ease);
+}
+
+
+/* =========================================================
+   PLACE CARDS
+   ========================================================= */
+
+.place-card {
+    background: var(--surface);
+
+    border-radius: var(--radius-md);
+
+    padding: 1.35rem;
+
+    margin-bottom: 1rem;
+
+    border: 1px solid var(--border);
+
+    box-shadow: var(--shadow-sm);
+
+    transition:
+        transform 0.35s var(--ease),
+        box-shadow 0.35s var(--ease),
+        border-color 0.35s var(--ease);
+}
+
+.place-card:hover {
+    transform: translateY(-6px);
+
+    border-color: var(--border-strong);
+
+    box-shadow: var(--shadow-md);
+}
+
+
+/* =========================================================
+   INFORMATION CARDS
+   ========================================================= */
+
+.info-card {
+    background: var(--surface);
+
+    border-radius: var(--radius-md);
+
+    padding: 1.5rem;
+
+    border-left: 4px solid var(--accent);
+
+    box-shadow: var(--shadow-sm);
+
+    margin-bottom: 1rem;
+}
+
+
+/* =========================================================
+   ITINERARY TIMELINE
+   ========================================================= */
+
+.timeline-item {
+    position: relative;
+
+    padding: 1rem 1rem 1rem 2rem;
+
+    border-left: 3px solid var(--accent);
+
+    margin-left: 0.7rem;
+
+    margin-bottom: 0.5rem;
+}
+
+.timeline-time {
+    font-size: 13px;
+
+    font-weight: 700;
+
+    color: var(--accent);
+
+    margin-bottom: 0.25rem;
+}
+
+.timeline-title {
+    font-size: 17px;
+
+    font-weight: 700;
+
+    color: var(--text-primary);
+}
+
+
+/* =========================================================
+   STREAMLIT BUTTONS
+   ========================================================= */
+
+.stButton > button {
+    border-radius: var(--radius-sm);
+    transition:
+        transform 0.2s var(--ease),
+        box-shadow 0.2s var(--ease),
+        background 0.2s var(--ease),
+        border-color 0.2s var(--ease);
+}
+
+.stButton > button:active {
+    transform: scale(0.98);
+}
+
+.stButton > button[kind="primary"] {
+    background: var(--accent-gradient) !important;
+    border: none !important;
+    color: #ffffff !important;
+
+    font-weight: 600;
+
+    box-shadow: 0 8px 20px rgba(15, 118, 110, 0.25);
+}
+
+.stButton > button[kind="primary"]:hover {
+    box-shadow: 0 10px 26px rgba(15, 118, 110, 0.32);
+    transform: translateY(-1px);
+}
+
+.stButton > button[kind="secondary"] {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-strong) !important;
+    color: var(--text-primary) !important;
+
+    font-weight: 600;
+}
+
+.stButton > button[kind="secondary"]:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+[data-testid="stSidebar"] {
+    background: var(--surface);
+
+    border-right: 1px solid var(--border);
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: var(--text-primary);
+}
+
+
+/* =========================================================
+   INPUT FIELDS
+   ========================================================= */
+
+.stTextInput input,
+.stNumberInput input {
+    border-radius: var(--radius-sm);
+}
+
+.stSelectbox div {
+    border-radius: var(--radius-sm);
+}
+
+.stTextInput input,
+.stNumberInput input,
+.stSelectbox > div > div,
+.stMultiSelect > div > div,
+[data-baseweb="select"] > div {
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+
+/* =========================================================
+   SEARCH INPUT
+   ========================================================= */
+
+[data-testid="stTextInput"] input {
+    border: 1px solid var(--border-strong);
+
+    background: var(--surface);
+
+    color: var(--text-primary);
+
+    padding: 0.7rem 0.9rem;
+}
+
+[data-testid="stTextInput"] input:focus {
+    border-color: var(--accent);
+
+    box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+/* The folium map lives inside a bordered st.container(); round its
+   corners and give it a soft shadow so it reads as a distinct card
+   instead of blending into the page's light background. */
+div[data-testid="stVerticalBlockBorderWrapper"]:has(iframe) {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+div[data-testid="stVerticalBlockBorderWrapper"]:has(iframe) iframe {
+    display: block;
+}
+
+
+/* =========================================================
+   DATAFRAME
+   ========================================================= */
+
+[data-testid="stDataFrame"] {
+    border-radius: var(--radius-sm);
+}
+
+
+/* =========================================================
+   LINKS
+   ========================================================= */
+
+a {
+    color: var(--accent);
+}
+
+a:hover {
+    color: var(--accent-strong);
+}
+
+
+/* =========================================================
+   DIVIDERS
+   ========================================================= */
+
+hr {
+    border: none;
+
+    border-top: 1px solid var(--border);
+
+    margin: 1.5rem 0;
+}
+
+
+/* =========================================================
+   EXPANDER
+   ========================================================= */
+
+[data-testid="stExpander"] {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
+    transition: box-shadow 0.3s var(--ease);
+}
+
+[data-testid="stExpander"]:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+[data-testid="stExpander"] summary {
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   RADIO / CHECKBOX
+   ========================================================= */
+
+[data-testid="stRadio"] label,
+[data-testid="stCheckbox"] label {
+    transition: color 0.2s var(--ease);
+}
+
+[data-testid="stRadio"] [role="radiogroup"] {
+    gap: 0.4rem;
+}
+
+
+/* =========================================================
+   TABS
+   ========================================================= */
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.stTabs [data-baseweb="tab"] {
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.stTabs [aria-selected="true"] {
+    color: var(--accent);
+}
+
+
+/* =========================================================
+   METRIC WIDGET
+   ========================================================= */
+
+[data-testid="stMetric"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.2rem;
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
+}
+
+[data-testid="stMetric"]:hover {
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+}
+
+[data-testid="stMetricValue"] {
+    color: var(--accent);
+    letter-spacing: -0.02em;
+}
+
+
+/* =========================================================
+   FOCUS STATES
+   ========================================================= */
+
+.stSelectbox [data-baseweb="select"]:focus-within,
+.stMultiSelect [data-baseweb="select"]:focus-within,
+.stNumberInput input:focus,
+.stTextInput input:focus {
+    box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+
+/* =========================================================
+   PHOTOS ON DESTINATION TILES AND HERO CARDS
+   Collected photos (Wikimedia Commons / official tourism sites)
+   sit above the category glyph, so a photo that fails to load
+   still leaves a meaningful tile.
+   ========================================================= */
+
+.hrow-subtitle {
+    margin-left: 0.6rem;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0;
+}
+
+.hrow-tile {
+    padding: 0 0 1.1rem;
+    overflow: hidden;
+}
+
+.hrow-tile > .hrow-tile-visual,
+.hrow-tile > .hrow-tile-name,
+.hrow-tile > .hrow-tile-meta,
+.hrow-tile > .hrow-tile-blurb {
+    padding-left: 1.1rem;
+    padding-right: 1.1rem;
+}
+
+.hrow-tile > .hrow-tile-visual {
+    padding-top: 1.3rem;
+}
+
+.hrow-tile-photo {
+    position: relative;
+    height: 128px;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(160deg, var(--accent-soft), var(--surface));
+    overflow: hidden;
+}
+
+.hrow-tile-photo img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s var(--ease);
+}
+
+.hrow-tile:hover .hrow-tile-photo img {
+    transform: scale(1.05);
+}
+
+.hrow-tile-photo-glyph {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+}
+
+.hrow-tile-blurb {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.hs-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease);
+}
+
+.hs-card:hover .hs-photo {
+    transform: scale(1.06);
+}
+
+.hs-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(4, 30, 28, 0.72) 0%, rgba(4, 30, 28, 0.15) 45%, rgba(4, 30, 28, 0.55) 100%);
+}
+
+.hs-name {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.hs-district {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.85;
+}
+
+
+/* =========================================================
+   PLACE DETAILS: PHOTO, FESTIVALS, SOURCES
+   ========================================================= */
+
+.place-photo {
+    margin: 0.5rem 0 1.5rem;
+}
+
+.place-photo img {
+    display: block;
+    width: 100%;
+    max-height: 460px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.place-photo figcaption {
+    margin-top: 0.45rem;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.festival-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+}
+
+.festival-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md, 12px);
+    background: var(--surface);
+}
+
+.festival-when {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.festival-name {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.festival-desc {
+    margin-top: 0.2rem;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.place-sources {
+    margin: 2rem 0 1rem;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.place-sources a {
+    color: var(--accent);
+}
+
+@media (max-width: 640px) {
+    .festival-row {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+}
+
+/* The hero card strip only scrolls sideways. */
+.hs-row {
+    overflow-y: hidden;
+}
+
+.rank-thumb {
+    flex-shrink: 0;
+    width: 112px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+@media (max-width: 640px) {
+    .rank-thumb {
+        width: 72px;
+        height: 56px;
+    }
+}
+
+/* Hero card strip: larger cards that fill the wider hero column. */
+.hs-row {
+    margin: 1rem 0 1.5rem;
+    gap: 1rem;
+}
+
+.hs-card {
+    width: 200px;
+    height: 270px;
+}
+
+@media (max-width: 900px) {
+    .hs-card {
+        width: 168px;
+        height: 220px;
+    }
+}
+
+
+/* =========================================================
+   CATEGORY MOSAIC (Explore)
+   Each tile is the category's best photo with its count and name.
+   One orchestrated moment: tiles rise in sequence on load.
+   ========================================================= */
+
+.cat-section {
+    margin: 2.5rem 0 1rem;
+}
+
+.cat-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.cat-tile {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--accent-strong);
+    text-decoration: none;
+    color: #ffffff;
+    isolation: isolate;
+    animation: cat-rise 0.7s var(--ease) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+.cat-tile:hover,
+.cat-tile:focus-visible {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.cat-tile:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.cat-media {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+}
+
+.cat-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.02);
+    transition: transform 0.9s var(--ease);
+}
+
+.cat-tile:hover .cat-media img,
+.cat-tile:focus-visible .cat-media img {
+    transform: scale(1.1);
+}
+
+.cat-glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 48px;
+    background: var(--accent-gradient);
+}
+
+.cat-shade {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(3, 26, 24, 0) 30%, rgba(3, 26, 24, 0.55) 62%, rgba(3, 26, 24, 0.9) 100%);
+}
+
+.cat-body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 14px 16px 16px;
+}
+
+.cat-count {
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 3px 9px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.cat-name {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.cat-line {
+    margin-top: 4px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    opacity: 0.88;
+}
+
+/* The best-known place is revealed when the tile is explored. */
+.cat-top {
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    opacity: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #99f6e4;
+    transition: max-height 0.4s var(--ease), opacity 0.4s var(--ease), margin-top 0.4s var(--ease);
+}
+
+.cat-tile:hover .cat-top,
+.cat-tile:focus-visible .cat-top {
+    max-height: 3em;
+    margin-top: 6px;
+    opacity: 1;
+}
+
+.cat-tile-selected {
+    box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--accent);
+}
+
+@keyframes cat-rise {
+    from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (max-width: 1100px) {
+    .cat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .cat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .cat-name {
+        font-size: 18px;
+    }
+
+    .cat-line {
+        display: none;
+    }
+
+    /* No hover on touch screens: always show the best-known place. */
+    .cat-top {
+        max-height: 3em;
+        margin-top: 4px;
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cat-tile {
+        animation: none;
+    }
+
+    .cat-media img,
+    .cat-top {
+        transition: none;
+    }
+}
+
+.info-card-note {
+    margin-top: 0.35rem;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.rank-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: var(--accent-soft);
+}
+
+/* Streamlit's markdown link colour/underline outranks plain class rules;
+   tile text must stay white on the photo. */
+.cat-grid a.cat-tile,
+.cat-grid a.cat-tile:visited,
+.cat-grid a.cat-tile:hover,
+.cat-grid a.cat-tile *,
+.hs-row a.hs-card,
+.hs-row a.hs-card * {
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+.cat-grid a.cat-tile .cat-top {
+    color: #99f6e4 !important;
+}
+
+
+/* =========================================================
+   PLANNER PANELS (Recommendations, Itinerary, Budget)
+   The controls of every inner page sit on one white panel, so the
+   pages share the Explore page's surfaces instead of a bare stack
+   of form fields.
+   ========================================================= */
+
+[class*="st-key-planner_panel"] {
+    margin: 1.5rem 0 2rem;
+    padding: 26px 28px 22px;
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    animation: panel-in 0.6s var(--ease) both;
+}
+
+.panel-title {
+    margin-bottom: 0.4rem;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+[class*="st-key-planner_panel"] label p,
+[class*="st-key-planner_panel"] [data-testid="stWidgetLabel"] p {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Inputs: one rounded, quiet style. */
+[class*="st-key-planner_panel"] [data-baseweb="select"] > div,
+[class*="st-key-planner_panel"] [data-baseweb="input"],
+[class*="st-key-planner_panel"] [data-testid="stNumberInputContainer"] {
+    border-radius: 12px !important;
+    background: var(--surface-alt) !important;
+    border-color: var(--border) !important;
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+[class*="st-key-planner_panel"] [data-baseweb="select"] > div:focus-within,
+[class*="st-key-planner_panel"] [data-baseweb="input"]:focus-within {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Selected interests appear as teal chips. */
+[class*="st-key-planner_panel"] [data-baseweb="tag"] {
+    border-radius: var(--radius-pill) !important;
+    background: var(--accent-soft) !important;
+    color: var(--accent-strong) !important;
+}
+
+[class*="st-key-planner_panel"] [data-baseweb="tag"] span {
+    color: var(--accent-strong) !important;
+}
+
+/* Mode choice: pills instead of radio circles. */
+[class*="st-key-planner_panel"] [role="radiogroup"] {
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+[class*="st-key-planner_panel"] [role="radiogroup"] > label {
+    margin: 0;
+    padding: 8px 16px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    cursor: pointer;
+    transition: background 0.25s var(--ease), border-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+[class*="st-key-planner_panel"] [role="radiogroup"] > label > div:first-child {
+    display: none;
+}
+
+[class*="st-key-planner_panel"] [role="radiogroup"] > label:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+[class*="st-key-planner_panel"] [role="radiogroup"] > label:has(input:checked) {
+    border-color: transparent;
+    background: var(--accent-gradient);
+    box-shadow: 0 6px 16px rgba(15, 118, 110, 0.28);
+}
+
+[class*="st-key-planner_panel"] [role="radiogroup"] > label:has(input:checked) p {
+    color: #ffffff !important;
+}
+
+[class*="st-key-planner_panel"] [role="radiogroup"] > label:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+[class*="st-key-planner_panel"] [data-testid="stCaptionContainer"] {
+    color: var(--text-secondary);
+}
+
+[class*="st-key-planner_panel"] .stButton > button[kind="primary"] {
+    height: 48px;
+    margin-top: 0.4rem;
+    border-radius: var(--radius-pill) !important;
+    font-size: 15px;
+}
+
+/* Photo cards in inner page headers: same cards as the Explore hero. */
+.page-hero-cards {
+    margin-top: 0.4rem;
+}
+
+@keyframes panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (max-width: 640px) {
+    [class*="st-key-planner_panel"] {
+        padding: 18px 16px;
+        border-radius: var(--radius-md);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [class*="st-key-planner_panel"] {
+        animation: none;
+    }
+}
+
+/* Inner page titles sit close to the Explore headline's scale. */
+.page-hero-title {
+    font-size: 52px;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+}
+
+@media (max-width: 900px) {
+    .page-hero-title {
+        font-size: 34px;
+    }
+}
+
+/* Streamlit gives each element a fixed pixel width from the page column;
+   inside the padded panel they must follow the panel instead. */
+[class*="st-key-planner_panel"] [data-testid="stElementContainer"],
+[class*="st-key-planner_panel"] [data-testid="element-container"],
+[class*="st-key-planner_panel"] [data-testid="stHorizontalBlock"] {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+/* The widget wrapper itself carries an inline pixel width. */
+[class*="st-key-planner_panel"] .stElementContainer > div,
+[class*="st-key-planner_panel"] [data-testid="stElementContainer"] > div {
+    width: 100% !important;
+    max-width: 100%;
+}
+
+
+/* =========================================================
+   BUDGET BREAKDOWN
+   ========================================================= */
+
+.budget-total-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.budget-card .budget-total {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.8rem;
+}
+
+.budget-card .budget-item {
+    display: block;
+    padding: 0.7rem 0;
+}
+
+.budget-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.budget-share {
+    margin-left: 0.6rem;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.budget-bar {
+    height: 8px;
+    margin-top: 0.45rem;
+    border-radius: var(--radius-pill);
+    background: var(--accent-soft);
+    overflow: hidden;
+}
+
+.budget-bar span {
+    display: block;
+    width: var(--share);
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent-gradient);
+    animation: budget-grow 0.9s var(--ease) both;
+    transform-origin: left center;
+}
+
+@keyframes budget-grow {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .budget-bar span {
+        animation: none;
+    }
+}
+
+/* Itinerary stops show their photo beside the details. */
+.timeline-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+
+.timeline-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.timeline-photo {
+    flex-shrink: 0;
+    width: 200px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 640px) {
+    .timeline-row {
+        flex-direction: column-reverse;
+    }
+
+    .timeline-photo {
+        width: 100%;
+        height: 170px;
+    }
+}
+
+/* Suggestion chips use the app's teal, not the default link blue. */
+.chat-chip-row a.chat-chip,
+.chat-chip-row a.chat-chip:visited {
+    color: var(--accent-strong) !important;
+    text-decoration: none !important;
+    border-color: var(--border-strong);
+    transition: background 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+
+.chat-chip-row a.chat-chip:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+}

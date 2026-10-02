@@ -1,0 +1,130 @@
+.place-card-image {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+}
+
+.place-card-title {
+    font-size: 21px;
+    font-weight: 750;
+    color: #172033;
+    margin-bottom: 0.35rem;
+}
+
+.place-card-location {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 0.7rem;
+}
+
+.place-card-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #475569;
+}
+
+.place-card-rating {
+    font-size: 15px;
+    font-weight: 700;
+    color: #b45309;
+}
+
+.place-card-rating-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+.place-card-rating-empty {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+.place-card-distance {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.place-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #eef1f5;
+}
+
+.rating-stars {
+    color: #f59e0b;
+    letter-spacing: 2px;
+}
+
+.crowd-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.crowd-low {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.crowd-medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.crowd-high {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.budget-card {
+    background: white;
+    border-radius: 18px;
+    padding: 1.4rem;
+    border: 1px solid #e6eaf0;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+}
+
+.budget-total {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0f766e;
+}
+
+.budget-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #eef1f5;
+    font-size: 14px;
+}
+
+.budget-item:last-child {
+    border-bottom: none;
+}
+
+.budget-label {
+    color: #64748b;
+}
+
+.budget-value {
+    font-weight: 700;
+    color: #172033;
+}
+
+.place-card-status {
+    font-size: 13px;
+    color: #0f766e;
+    font-weight: 650;
+    margin-top: 0.65rem;
+}

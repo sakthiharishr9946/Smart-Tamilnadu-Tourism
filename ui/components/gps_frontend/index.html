@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin:0">
+<script>
+  // Minimal Streamlit component (no build step): asks the browser for the
+  // current position once and returns it to Python as the component value.
+  // Streamlit's component iframe is granted the "geolocation" permission,
+  // so this works without reloading the page.
+  function send(type, data) {
+    window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), "*");
+  }
+  let answered = false;
+  function reply(value) {
+    if (answered) return;
+    answered = true;
+    send("streamlit:setComponentValue", {value: value, dataType: "json"});
+  }
+
+  let requested = false;
+  window.addEventListener("message", function (event) {
+    if (!event.data || event.data.type !== "streamlit:render" || requested) return;
+    requested = true;
+    if (!window.isSecureContext) {
+      reply({error: "insecure"});
+      return;
+    }
+    if (!navigator.geolocation) {
+      reply({error: "unsupported"});
+      return;
+    }
+    // An ignored permission prompt never calls back; don't wait forever.
+    setTimeout(function () { reply({error: "no_answer"}); }, 30000);
+    navigator.geolocation.getCurrentPosition(
+      function (position) {
+        reply({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      function (error) {
+        const codes = {1: "denied", 2: "unavailable", 3: "timeout"};
+        reply({error: codes[error.code] || "unavailable"});
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 300000}
+    );
+  });
+
+  send("streamlit:componentReady", {apiVersion: 1});
+  send("streamlit:setFrameHeight", {height: 0});
+</script>
+</body>
+</html>

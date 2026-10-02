@@ -1,0 +1,274 @@
+/* =========================================================
+   SMART TAMILNADU TOURISM
+   Navbar Styles — Apple-inspired light theme
+   ========================================================= */
+
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 1rem 1.4rem;
+
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow-sm);
+
+    margin-bottom: 1rem;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .navbar {
+        background: var(--surface);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+
+/* =========================================================
+   NAVBAR BRAND
+   ========================================================= */
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+
+    gap: 0.7rem;
+}
+
+.navbar-logo {
+    width: 42px;
+    height: 42px;
+
+    object-fit: contain;
+
+    border-radius: 10px;
+}
+
+.navbar-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+
+    color: var(--accent-strong);
+
+    margin: 0;
+}
+
+.navbar-subtitle {
+    font-size: 11px;
+    font-weight: 500;
+
+    color: var(--text-secondary);
+
+    margin: 0.15rem 0 0;
+}
+
+
+/* =========================================================
+   NAVBAR MENU (segmented-control style pill buttons)
+   ========================================================= */
+
+/* The nav row is rendered via st.columns()+st.button() right below the
+   brand block; keep their labels on a single line at every width so
+   the longest item ("Recommendations") never wraps inside its pill. */
+
+div[data-testid="stHorizontalBlock"]:has(button[kind="primary"], button[kind="secondary"]) {
+    gap: 0.4rem;
+}
+
+.stButton > button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    font-size: 13.5px;
+}
+
+
+/* =========================================================
+   MOBILE NAVBAR
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .navbar {
+        padding: 0.8rem;
+
+        border-radius: var(--radius-md);
+    }
+
+    .navbar-logo {
+        width: 36px;
+        height: 36px;
+    }
+
+    .navbar-title {
+        font-size: 17px;
+    }
+
+    .navbar-subtitle {
+        font-size: 10px;
+    }
+
+    .stButton > button {
+        font-size: 12px;
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+    }
+}
+
+
+/* =========================================================
+   SMALL MOBILE NAVBAR
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .navbar {
+        padding: 0.65rem;
+
+        margin-bottom: 0.75rem;
+    }
+
+    .navbar-logo {
+        width: 32px;
+        height: 32px;
+    }
+
+    .navbar-title {
+        font-size: 15px;
+    }
+
+    .navbar-subtitle {
+        font-size: 9px;
+    }
+
+    .stButton > button {
+        font-size: 11px;
+        padding-left: 0.3rem;
+        padding-right: 0.3rem;
+    }
+}
+
+
+/* =========================================================
+   MAIN NAVIGATION: one segmented control
+   The five tabs sit on a single track; the active tab is a raised
+   teal pill that grows into place when selected, so the click itself
+   shows what changed.
+   ========================================================= */
+
+.st-key-main_nav {
+    padding: 6px;
+    margin: 0.4rem 0 1.6rem;
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+.st-key-main_nav div[data-testid="stHorizontalBlock"] {
+    gap: 4px;
+}
+
+.st-key-main_nav .stButton > button {
+    height: 44px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-secondary);
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: color 0.25s var(--ease), background 0.25s var(--ease);
+}
+
+.st-key-main_nav .stButton > button[kind="secondary"]:hover {
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+}
+
+.st-key-main_nav .stButton > button[kind="secondary"]:focus-visible,
+.st-key-main_nav .stButton > button[kind="primary"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.st-key-main_nav .stButton > button[kind="primary"] {
+    color: #ffffff;
+    background: var(--accent-gradient);
+    box-shadow: 0 6px 18px rgba(15, 118, 110, 0.32);
+    animation: nav-pill-in 0.45s var(--ease) both;
+}
+
+@keyframes nav-pill-in {
+    from {
+        transform: scale(0.86);
+        opacity: 0.4;
+        box-shadow: 0 0 0 rgba(15, 118, 110, 0);
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .st-key-main_nav {
+        border-radius: var(--radius-md);
+    }
+
+    .st-key-main_nav div[data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .st-key-main_nav div[data-testid="stColumn"] {
+        min-width: 128px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .st-key-main_nav .stButton > button[kind="primary"] {
+        animation: none;
+    }
+}
+
+/* Global .stButton rules in main.css use !important; the tab bar's own
+   look has to match that to win (it is also more specific). */
+.st-key-main_nav .stButton > button[kind="secondary"] {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    box-shadow: none !important;
+}
+
+.st-key-main_nav .stButton > button[kind="secondary"]:hover {
+    background: var(--accent-soft) !important;
+    color: var(--accent-strong) !important;
+}
+
+.st-key-main_nav .stButton > button[kind="primary"] {
+    border: none !important;
+    color: #ffffff !important;
+    background: var(--accent-gradient) !important;
+}
+
+.st-key-main_nav .stButton > button[kind="primary"]:hover {
+    transform: none;
+}

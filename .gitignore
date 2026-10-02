@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+*.png
+.playwright-mcp/
+database/tourism.db.bak
+database/tourism.db.bak2
+.env
+
+# collector caches (OSM responses, PIN code lookups)
+data/cache/
+_backup_before_scraper_fix/
+
+# local tooling / test artefacts
+.pytest_cache/
+.agent/
+.ralphy/
+.deepeval/
+*.db.bak*

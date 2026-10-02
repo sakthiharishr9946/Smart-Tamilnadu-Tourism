@@ -1,0 +1,197 @@
+/* =========================================================
+   SMART TAMILNADU TOURISM
+   Responsive Design
+   ========================================================= */
+
+
+/* =========================================================
+   LARGE TABLETS / SMALL DESKTOP
+   ========================================================= */
+
+@media (max-width: 1200px) {
+
+    .block-container {
+        max-width: 1100px;
+    }
+
+    .place-card-image {
+        height: 190px;
+    }
+}
+
+
+/* =========================================================
+   TABLETS
+   ========================================================= */
+
+@media (max-width: 992px) {
+
+    .block-container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .place-card-image {
+        height: 180px;
+    }
+
+    .section-title {
+        font-size: 25px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE / TABLET
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .main {
+        padding: 0 1rem 1rem 1rem;
+    }
+
+    .block-container {
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+    }
+
+
+    /* Section */
+
+    .section-title {
+        font-size: 22px;
+    }
+
+
+    /* Place cards */
+
+    .place-card {
+        padding: 1rem;
+    }
+
+    .place-card-image {
+        height: 200px;
+    }
+
+    .place-card-title {
+        font-size: 19px;
+    }
+
+    .place-card-description {
+        font-size: 13px;
+    }
+
+    .place-card-footer {
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 0.5rem;
+    }
+
+
+    /* Budget */
+
+    .budget-total {
+        font-size: 28px;
+    }
+
+
+    /* Timeline */
+
+    .timeline-item {
+        padding-left: 1.2rem;
+
+        margin-left: 0.3rem;
+    }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 576px) {
+
+    .main {
+        padding: 0 0.6rem 1rem 0.6rem;
+    }
+
+    .block-container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+
+    /* Section */
+
+    .section-title {
+        font-size: 20px;
+    }
+
+
+    /* Place cards */
+
+    .place-card-image {
+        height: 170px;
+    }
+
+    .place-card-title {
+        font-size: 18px;
+    }
+
+    .place-card-description {
+        font-size: 13px;
+    }
+
+
+    /* Budget */
+
+    .budget-total {
+        font-size: 26px;
+    }
+
+
+    /* Timeline */
+
+    .timeline-item {
+        padding-left: 1rem;
+
+        margin-left: 0.3rem;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+    .section-title {
+        font-size: 19px;
+    }
+
+
+    /* Place cards */
+
+    .place-card {
+        padding: 0.85rem;
+    }
+
+    .place-card-image {
+        height: 150px;
+    }
+
+    .place-card-title {
+        font-size: 17px;
+    }
+
+
+    /* Budget */
+
+    .budget-total {
+        font-size: 25px;
+    }
+}
