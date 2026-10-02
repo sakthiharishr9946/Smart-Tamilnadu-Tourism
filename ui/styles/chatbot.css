@@ -55,9 +55,28 @@
 
     font-size: 14.5px;
     line-height: 1.6;
-    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 
     animation: fadeInUp 0.35s var(--ease);
+}
+
+/* Answers are rendered from Markdown (format_message in chatbot_widget.py). */
+.chat-bubble p {
+    margin: 0 0 0.45rem;
+}
+
+.chat-bubble p:last-child,
+.chat-bubble ul:last-child {
+    margin-bottom: 0;
+}
+
+.chat-bubble ul {
+    margin: 0.2rem 0 0.55rem;
+    padding-left: 1.2rem;
+}
+
+.chat-bubble li {
+    margin: 0.15rem 0;
 }
 
 .chat-bubble.assistant {
@@ -77,8 +96,8 @@
 
 /* =========================================================
    CHAT QUICK-PROMPT CHIPS
-   Plain <a href="?chat_prompt=..."> tiles, same click-through
-   pattern used by the scroll rows and ranked list.
+   Rendered as Streamlit buttons (see .st-key-chat_chips below);
+   the old link styles are kept for any remaining .chat-chip markup.
    ========================================================= */
 
 .chat-chip-row {
@@ -117,4 +136,35 @@
     .chat-bubble {
         max-width: 88%;
     }
+}
+
+/* Suggested questions: Streamlit buttons styled as pills
+   (.st-key-chat_chips is the keyed container in chatbot_widget.py). */
+.st-key-chat_chips {
+    margin: 0.25rem 0 1.5rem;
+}
+
+.st-key-chat_chips .stButton > button {
+    min-height: 0 !important;
+    padding: 0.5rem 0.9rem !important;
+    border-radius: var(--radius-pill) !important;
+    border: 1px solid var(--border-strong) !important;
+    background: var(--surface) !important;
+    color: var(--accent-strong) !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s var(--ease), background 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.st-key-chat_chips .stButton > button p {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.st-key-chat_chips .stButton > button:hover {
+    border-color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+    transform: translateY(-1px);
 }

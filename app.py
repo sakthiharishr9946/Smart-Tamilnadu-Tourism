@@ -119,7 +119,7 @@ def main():
             st.session_state["selected_place_id"] = int(query_place_id)
         except (TypeError, ValueError):
             pass
-        st.query_params.clear()
+        del st.query_params["place_id"]
 
     # Navigation
     page = render_navbar()

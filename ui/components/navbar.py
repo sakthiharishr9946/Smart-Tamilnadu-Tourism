@@ -28,10 +28,18 @@ def render_navbar(active_page="Explore"):
         unsafe_allow_html=True,
     )
 
+    # The open page also lives in the URL (?page=Chatbot), so a browser
+    # refresh - which starts a fresh Streamlit session - stays on it.
+    url_page = st.query_params.get("page")
+    if "active_page" not in st.session_state and url_page in pages:
+        st.session_state["active_page"] = url_page
+
     selected_page = st.session_state.get(
         "active_page",
         active_page,
     )
+    if st.query_params.get("page") != selected_page:
+        st.query_params["page"] = selected_page
 
     # The keyed container gives the tab row a stable CSS hook
     # (.st-key-main_nav) so it can be styled as one segmented control.
@@ -53,6 +61,7 @@ def render_navbar(active_page="Explore"):
                 type=button_type,
             ):
                 st.session_state["active_page"] = page
+                st.query_params["page"] = page
                 st.session_state.pop("selected_place_id", None)
                 st.rerun()
 

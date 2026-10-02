@@ -1,5 +1,5 @@
+import re
 from html import escape
-from urllib.parse import quote
 
 import streamlit as st
 
@@ -20,6 +20,45 @@ def initialize_chat():
         st.session_state["chat_messages"] = []
 
 
+_BULLET_RE = re.compile(r"^\s*(?:[-*•]|(?P<number>\d+)[.)])\s+")
+_BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+
+
+def format_message(text):
+    """Chat text (with simple Markdown: **bold**, "- " / "1. " lists) as safe HTML.
+
+    The transcript is one hand-built HTML block, where Streamlit does not
+    apply Markdown, so answers used to show raw "**" and "- " marks.
+    """
+    blocks, items = [], []
+    list_tag = "ul"
+
+    def flush_list():
+        if items:
+            blocks.append(f"<{list_tag}>" + "".join(f"<li>{item}</li>" for item in items) + f"</{list_tag}>")
+            items.clear()
+
+    def inline(value):
+        return _BOLD_RE.sub(r"<strong>\1</strong>", escape(value.strip()))
+
+    for line in str(text or "").splitlines():
+        if not line.strip():
+            flush_list()
+            continue
+        bullet = _BULLET_RE.match(line)
+        if bullet:
+            tag = "ol" if bullet.group("number") else "ul"
+            if items and tag != list_tag:
+                flush_list()
+            list_tag = tag
+            items.append(inline(line[bullet.end():]))
+        else:
+            flush_list()
+            blocks.append(f"<p>{inline(line)}</p>")
+    flush_list()
+    return "".join(blocks)
+
+
 def _render_transcript():
     messages = st.session_state["chat_messages"]
 
@@ -34,7 +73,7 @@ def _render_transcript():
     rows = []
     for message in messages:
         role = message.get("role", "assistant")
-        content = escape(str(message.get("content", "")))
+        content = format_message(message.get("content", ""))
         avatar = "🧑" if role == "user" else "🤖"
 
         rows.append(
@@ -48,12 +87,19 @@ def _render_transcript():
 
 
 def _render_quick_prompts():
-    chips = "".join(
-        f'<a class="chat-chip" href="?chat_prompt={quote(prompt)}" target="_self">{escape(prompt)}</a>'
-        for prompt in QUICK_PROMPTS
-    )
+    """Suggested questions as real buttons.
 
-    st.markdown(f'<div class="chat-chip-row">{chips}</div>', unsafe_allow_html=True)
+    They used to be <a href="?chat_prompt=..."> links, which reload the
+    page: Streamlit then starts a new session, forgets the open page and
+    the conversation, and the app fell back to Explore.
+    """
+    chips = st.container(key="chat_chips")
+    columns = chips.columns(len(QUICK_PROMPTS), gap="small")
+    for index, prompt in enumerate(QUICK_PROMPTS):
+        with columns[index]:
+            if st.button(prompt, key=f"chat_chip_{index}", use_container_width=True):
+                return prompt
+    return None
 
 
 def _handle_message(user_message):
@@ -75,15 +121,16 @@ def render_chatbot():
     )
     st.markdown(f'<div class="ghost-toolbar-label reveal">{ai_status}</div>', unsafe_allow_html=True)
 
+    # Old bookmarked links may still carry ?chat_prompt=...
     queued_prompt = st.query_params.get("chat_prompt")
     if queued_prompt:
-        st.query_params.clear()
+        del st.query_params["chat_prompt"]
         _handle_message(queued_prompt)
 
     _render_transcript()
-    _render_quick_prompts()
+    chip_prompt = _render_quick_prompts()
 
-    user_message = st.chat_input("Ask about Tamil Nadu tourism...")
+    user_message = st.chat_input("Ask about Tamil Nadu tourism...") or chip_prompt
 
     if user_message:
         _handle_message(user_message)
