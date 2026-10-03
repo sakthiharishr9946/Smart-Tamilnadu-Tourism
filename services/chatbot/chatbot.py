@@ -136,12 +136,22 @@ def _describe_places(places, heading):
     return heading + "\n\n" + "\n".join(lines)
 
 
+def _once_each(festivals):
+    """Each festival once, at its earliest listed date, in date order."""
+    first = {}
+    for festival in sorted(festivals, key=lambda f: str(f.get("start_date") or "9999")):
+        first.setdefault(str(festival.get("festival_name") or "").strip().casefold(), festival)
+    return list(first.values())
+
+
 def _festival_answer(district):
     import datetime
     today = datetime.date.today().isoformat()
     rows = [dict(r) for r in get_festivals_for_place(-1, district)]
-    local = [r for r in rows if district and r.get("district") == district]
-    upcoming = [r for r in rows if r.get("district") is None and str(r.get("start_date") or "") >= today][:6]
+    local = _once_each([r for r in rows if district and r.get("district") == district])
+    # Holidays are stored for this year and next: keep each festival's next date only.
+    upcoming = _once_each([r for r in rows if r.get("district") is None
+                           and str(r.get("start_date") or "") >= today])[:6]
     parts = []
     if local:
         parts.append(f"Festivals in {district}: " + "; ".join(

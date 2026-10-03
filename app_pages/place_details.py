@@ -264,12 +264,23 @@ def _festival_when(festival):
     return "Date varies"
 
 
+def _next_occurrences(festivals):
+    """One entry per festival - its earliest listed date - in date order.
+
+    Holidays are stored for this year and next, so "Pongal" exists twice."""
+    first = {}
+    for festival in sorted(festivals, key=lambda f: str(f.get("start_date") or "9999")):
+        first.setdefault(str(festival.get("festival_name") or "").strip().casefold(), festival)
+    return list(first.values())
+
+
 def _render_festivals(festivals, district, statewide_limit=6):
     today = datetime.date.today().isoformat()
     local = [f for f in festivals if f.get("relevance", 2) < 2]
     # Statewide festival holidays: only the next few upcoming dates.
     statewide = [f for f in festivals if f.get("relevance", 2) == 2 and str(f.get("start_date") or "") >= today]
-    statewide = sorted(statewide, key=lambda f: f.get("start_date") or "")[:statewide_limit]
+    statewide = _next_occurrences(statewide)[:statewide_limit]
+    local = _next_occurrences(local)
     if not local and not statewide:
         return
 

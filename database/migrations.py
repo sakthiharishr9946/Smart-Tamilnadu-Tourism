@@ -33,6 +33,8 @@ PLACE_COLUMNS_TO_ADD = {
     # NULL = coordinates of the place itself; "locality" = centre of the
     # village/town it stands in (approximate, shown as such in the UI).
     "location_precision": "TEXT",
+    # "|"-separated names of entries merged into this place (duplicate clean-up).
+    "merged_names": "TEXT",
 }
 
 COLLECTOR_SCHEMA = """

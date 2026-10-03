@@ -211,3 +211,125 @@ def _merge_group(group):
             sources.append(pair)
     merged["sources"] = sources
     return merged
+
+
+# ---------------------------------------------------------------------------
+# Spelling-variant duplicates already in the database
+# ---------------------------------------------------------------------------
+# "MGM Dizzee World" / "MGM Dizee World", "Alamparai Fort" / "Alambarai Fort",
+# "Udayagiriswarar koil" / "Udayagiriswararkoil". The rules are strict on
+# purpose: neighbouring temples often differ by one syllable of the deity's
+# name ("Valeeswarar" / "Malleeswarar" Temple, Mylapore).
+
+SPELLING_DUPLICATE_THRESHOLD = 0.88
+SPELLING_DUPLICATE_MAX_KM = 2.0
+
+# Words that only say what kind of place it is -> one canonical type each.
+_PLACE_TYPES = {
+    "temple": "temple", "temples": "temple", "kovil": "temple", "koil": "temple", "koyil": "temple",
+    "kovils": "temple", "thirukoil": "temple", "alayam": "temple",
+    "church": "church", "cathedral": "church", "basilica": "church",
+    "mosque": "mosque", "masjid": "mosque", "dargah": "dargah", "darga": "dargah",
+    "madam": "mutt", "mutt": "mutt", "math": "mutt",
+    "fort": "fort", "palace": "palace", "mahal": "palace",
+    "cave": "cave", "caves": "cave",
+    "falls": "falls", "waterfall": "falls", "waterfalls": "falls", "aruvi": "falls",
+    "beach": "beach", "lake": "lake", "dam": "dam", "museum": "museum",
+    "mandapa": "mandapam", "mandapam": "mandapam", "memorial": "memorial",
+    "park": "park", "garden": "park", "gardens": "park", "sanctuary": "sanctuary",
+    "hill": "hill", "hills": "hill", "malai": "hill", "peak": "hill",
+    "island": "island", "lighthouse": "lighthouse",
+}
+# Words that carry no identity at all.
+_FILLER_WORDS = {"arulmigu", "sri", "shri", "shree", "sree", "the", "csi", "new", "old", "and", "of", "at", "swamy",
+                 "swami", "samy", "thiru", "tiru"}
+
+
+# Extra type words that still describe the same site.
+_SAME_SITE_TYPES = {"park", "memorial", "mandapam", "museum"}
+# Voicing differs freely in transliteration (Kamuthi / Kamudi, Nagar / Nakar).
+_VOICING = str.maketrans({"g": "k", "b": "p", "d": "t", "j": "s", "z": "s", "c": "s", "h": ""})
+
+
+def _same_consonants(a, b):
+    """Spelling variants differ in vowels, doubling or a dropped letter -
+    never in a substituted consonant ("Kachaleeswarar" vs "Kapaleeswarar")."""
+    import difflib
+    import re
+    skeleton = lambda key: re.sub(r"(.)\1+", r"\1", re.sub(r"[aeiouy]", "", key.translate(_VOICING)))  # noqa: E731
+    opcodes = difflib.SequenceMatcher(None, skeleton(a), skeleton(b)).get_opcodes()
+    changed = [(tag, max(i2 - i1, j2 - j1)) for tag, i1, i2, j1, j2 in opcodes if tag != "equal"]
+    return all(tag != "replace" for tag, _ in changed) and sum(size for _, size in changed) <= 2
+
+
+def _name_parts(place_name, district=None):
+    """(identity key, place types, locality key) for duplicate checks."""
+    import re
+    from services.data_quality import name_key
+    head, _, rest = str(place_name or "").partition(",")
+    head = re.sub(r"\bwater\s+falls?\b", "waterfalls", head, flags=re.IGNORECASE)  # "Hogenakkal Water Falls"
+    district_tokens = set(name_key(district).split()) if district else set()
+    tokens = name_key(head).split()
+    types = {_PLACE_TYPES[t] for t in tokens if t in _PLACE_TYPES}
+    identity = "".join(t for t in tokens
+                       if t not in _PLACE_TYPES and t not in _FILLER_WORDS and t not in district_tokens)
+    # "Udayagiriswararkoil" carries its type glued to the name (only looked
+    # for when no separate type word exists: "Viralimalai Sanctuary").
+    for word, kind in _PLACE_TYPES.items():
+        if not types and len(word) >= 4 and identity.endswith(word) and identity != word:
+            types.add(kind)
+            identity = identity[: -len(word)]
+            break
+    locality = phonetic_key(name_key(rest.split(",")[0])).replace(" ", "") if rest.strip() else ""
+    return re.sub(r"(.)\1+", r"\1", phonetic_key(identity)), types, locality
+
+
+def _same_locality(a, b):
+    import difflib
+    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.85
+
+
+def place_localities(place):
+    """Village keys named by a place and by the entries merged into it."""
+    names = [place.get("place_name"), *str(place.get("merged_names") or "").split("|")]
+    return {loc for loc in (_name_parts(name, place.get("district"))[2] for name in names if name) if loc}
+
+
+def is_spelling_duplicate(a, b):
+    """True when two place records of one district are the same place spelt differently.
+
+    ``a``/``b`` are dicts with place_name, district, latitude, longitude and
+    location_precision ("locality" = village-centre approximation).
+    """
+    import difflib
+    id_a, types_a, _ = _name_parts(a.get("place_name"), a.get("district"))
+    id_b, types_b, _ = _name_parts(b.get("place_name"), b.get("district"))
+    locs_a, locs_b = place_localities(a), place_localities(b)
+    if len(id_a) < 5 or len(id_b) < 5 or id_a[0] != id_b[0]:
+        return False
+    # Same kind of place. A bare name ("Pykara", "Nagore") is usually the
+    # town or area, not the waterfall / dam / dargah named after it; an
+    # extra type word may only describe the same site ("Dam" / "Dam Park").
+    if bool(types_a) != bool(types_b) or not (types_a <= types_b or types_b <= types_a):
+        return False
+    if (types_a ^ types_b) - _SAME_SITE_TYPES:
+        return False  # "... Temple" vs "... Kovil Beach"
+    # Compare with voicing evened out: "Alamparai" / "Alambarai", "Kamuthi" / "Kamudi".
+    similarity = difflib.SequenceMatcher(None, id_a.translate(_VOICING), id_b.translate(_VOICING)).ratio()
+    if similarity < SPELLING_DUPLICATE_THRESHOLD or not _same_consonants(id_a, id_b):
+        return False
+    coords_a, coords_b = _coords(a), _coords(b)
+    if locs_a and locs_b:
+        # Both name their village (directly or through entries merged into
+        # them earlier): every village must be the same one.
+        return all(any(_same_locality(x, y) for y in locs_b) for x in locs_a) and \
+            all(any(_same_locality(y, x) for x in locs_a) for y in locs_b)
+    if locs_a or locs_b:
+        # "Kamakshi Amman Temple" (Kanchipuram) vs "... Temple, Mangadu":
+        # only the same place when the two are actually close together.
+        return bool(coords_a and coords_b) and _distance_km(coords_a, coords_b) <= 3.0
+    exact = [r for r in (a, b) if _coords(r) and r.get("location_precision") != "locality"]
+    if len(exact) == 2:
+        return _distance_km(_coords(exact[0]), _coords(exact[1])) <= SPELLING_DUPLICATE_MAX_KM
+    # Without two surveyed positions the names alone must be near-identical.
+    return similarity >= 0.92

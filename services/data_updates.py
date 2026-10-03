@@ -212,6 +212,7 @@ def refresh_tourism_data(sources=None, skip=(), max_workers=4, source_options=No
 
         removed = _remove_junk_places(ingestor)
         duplicates_merged = ingestor.merge_cross_district_duplicates()
+        spelling_duplicates_merged = ingestor.merge_spelling_duplicates()
         ingestor.update_prominence()
         stats = dict(ingestor.stats)
 
@@ -229,6 +230,7 @@ def refresh_tourism_data(sources=None, skip=(), max_workers=4, source_options=No
         "commons_images_resolved": images_resolved,
         "junk_places_removed": removed,
         "cross_district_duplicates_merged": duplicates_merged,
+        "spelling_duplicates_merged": spelling_duplicates_merged,
         "places_total": counts["places"],
         "places_with_coordinates": counts["with_coordinates"] or 0,
         "districts_covered": counts["districts"],

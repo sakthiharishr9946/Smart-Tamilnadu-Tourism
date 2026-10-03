@@ -31,7 +31,8 @@ def _print_report(report):
             print(f"      ... and {len(result['warnings']) - 5} more")
     print("-" * 78)
     for key in ("records_seen", "records_merged", "places_inserted", "places_updated", "images_written",
-                "festivals_written", "holidays_written", "junk_places_removed", "cross_district_duplicates_merged", "places_total",
+                "festivals_written", "holidays_written", "junk_places_removed", "cross_district_duplicates_merged", "spelling_duplicates_merged",
+                "places_total",
                 "places_with_coordinates", "districts_covered", "seconds"):
         print(f"  {key.replace('_', ' '):<26} {report.get(key)}")
 

@@ -221,8 +221,84 @@ class Ingestor:
                 merged += 1
         return merged
 
+    def find_spelling_duplicates(self):
+        """Groups of place ids in one district that are the same place spelt
+        differently ("MGM Dizzee World" / "MGM Dizee World"), best entry first.
+
+        A place joins a group only when it matches every member (so two
+        temples in different villages never merge through a third entry
+        with no village in its name).
+        """
+        from preprocessing.merging import _name_parts, _same_locality, is_spelling_duplicate, place_localities
+        rows = self.connection.execute(
+            """SELECT p.place_id, p.place_name, p.district, p.latitude, p.longitude, p.location_precision,
+                      p.merged_names, COALESCE(p.popularity_score, 0),
+                      (SELECT COUNT(*) FROM place_sources s WHERE s.place_id = p.place_id)
+               FROM places p"""
+        ).fetchall()
+        columns = ("place_id", "place_name", "district", "latitude", "longitude", "location_precision",
+                   "merged_names", "popularity", "source_count")
+        # Best entry first: exact coordinates, then more sources, then prominence.
+        places = sorted((dict(zip(columns, row)) for row in rows),
+                        key=lambda p: (p["latitude"] is None, p["location_precision"] == "locality",
+                                       -p["source_count"], -p["popularity"], p["place_id"]))
+        buckets = {}
+        for place in places:
+            key = _name_parts(place["place_name"], place["district"])[0]
+            buckets.setdefault((place["district"], key[:1]), []).append(place)
+        groups = []
+        for members in buckets.values():
+            # An entry naming no village that matches temples in two
+            # different villages ("Agastheeswarar Temple" vs "..., Ambasamudram"
+            # and "..., Kallidaikurichi") cannot be told apart: leave it alone.
+            ambiguous = set()
+            for place in members:
+                if place_localities(place):
+                    continue
+                villages = [place_localities(other) for other in members
+                            if other is not place and place_localities(other) and is_spelling_duplicate(place, other)]
+                flat = [v for group in villages for v in group]
+                if any(not _same_locality(x, y) for x in flat for y in flat):
+                    ambiguous.add(place["place_id"])
+            members = [p for p in members if p["place_id"] not in ambiguous]
+            clusters = []
+            for place in members:
+                for cluster in clusters:
+                    if all(is_spelling_duplicate(place, other) for other in cluster):
+                        cluster.append(place)
+                        break
+                else:
+                    clusters.append([place])
+            groups += [[p["place_id"] for p in cluster] for cluster in clusters if len(cluster) > 1]
+        return groups
+
+    def merge_spelling_duplicates(self):
+        """Merge every spelling-variant group into its best entry; returns how many entries were merged away."""
+        merged = 0
+        # A merged entry can match one more variant it did not match before
+        # ("Gandhi Museum" + "Gandhi Memorial Museum", then "Gandhi Memorial").
+        for _ in range(3):
+            groups = self.find_spelling_duplicates()
+            if not groups:
+                break
+            for keeper, *others in groups:
+                for other in others:
+                    self._absorb_place(keeper, other)
+                    merged += 1
+        return merged
+
     def _absorb_place(self, keeper_id, other_id):
         db = self.connection
+        # Remember what was merged in: its village counts as this place's own
+        # in later duplicate checks, so one entry never absorbs two temples
+        # from different villages over successive refreshes.
+        db.execute(
+            """UPDATE places SET merged_names = TRIM(
+                   COALESCE(merged_names, '') || '|' ||
+                   (SELECT place_name || COALESCE('|' || merged_names, '') FROM places WHERE place_id = :other), '|')
+               WHERE place_id = :keeper""",
+            {"keeper": keeper_id, "other": other_id},
+        )
         fields = ("city_town", "subcategory", "address", "wikidata_id", "osm_id", "source_url")
         db.execute(
             f"""UPDATE places SET
