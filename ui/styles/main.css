@@ -1619,3 +1619,42 @@ hr {
     background: var(--accent-soft);
     border-color: var(--accent);
 }
+
+/* Itinerary: drive legs, lunch breaks, start marker, timing notes */
+.timeline-day-summary {
+    margin: -0.4rem 0 0.9rem;
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
+}
+
+.timeline-drive {
+    margin: 0.15rem 0 0.35rem 1.1rem;
+    font-size: 12.5px;
+    color: var(--text-secondary, #64748b);
+}
+
+.timeline-break {
+    margin: 0.4rem 0 0.6rem;
+    padding: 0.55rem 1rem;
+    border-radius: 12px;
+    border: 1px dashed var(--border-strong, #cbd5e1);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+}
+
+.timeline-start {
+    margin-left: 0.5rem;
+    padding: 0.1rem 0.55rem;
+    border-radius: 999px;
+    background: var(--accent-soft, #e6f6f3);
+    color: var(--accent-strong, #0f766e);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.timeline-note {
+    margin-top: 0.25rem;
+    font-size: 12.5px;
+    color: var(--accent-strong, #0f766e);
+}

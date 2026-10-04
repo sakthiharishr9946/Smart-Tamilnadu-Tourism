@@ -21,6 +21,12 @@ def _p(name, lat=None, lon=None, precision=None, district="Chennai", merged=None
     (_p("Kelavarapalli Dam"), _p("Kellavarapalli Dam Park")),
     (_p("Narasimmar Temple, Sholingur"), _p("Narasimmar Temple, Sholingar")),
     (_p("Kachaleeswarar Temple", 13.090, 80.290), _p("Arulmigu Katchaleeshwarar Temple, Parrys", 13.091, 80.288)),
+    # Same deity under another name, village written inside the name.
+    (_p("Maruthamalai Murugan Temple"), _p("Arulmigu Subramaniaswamy Temple, Maruthamalai", 11.05, 76.85)),
+    (_p("Vallakottai Subramaniyaswami temple"), _p("Vallakottai Murugan Temple")),
+    (_p("Aliyar Dam", 10.4719, 76.9772), _p("Aliyar Reservoir", 10.4723, 76.9772)),
+    # Renamed park; large areas' mapped centres sit km apart.
+    (_p("Indira Gandhi National Park", 10.3478, 77.0947), _p("Anamalai Tiger Reserve", 10.3827, 77.0769)),
 ])
 def test_spelling_variants_are_duplicates(a, b):
     assert is_spelling_duplicate(a, b)
@@ -36,6 +42,8 @@ def test_spelling_variants_are_duplicates(a, b):
     (_p("Pykara"), _p("Pykara Waterfalls")),
     (_p("Subramaniya Swamy Temple, Tiruchendur"), _p("Subramaniya Swamy Kovil Beach")),
     (_p("Viralimalai"), _p("Viralimalai Sanctuary")),
+    (_p("Maruthamalai"), _p("Arulmigu Subramaniaswamy Temple, Maruthamalai")),  # the hill, not the temple
+    (_p("Velliangiri Murugan Temple"), _p("Arulmigu Subramaniaswamy Temple, Maruthamalai")),
     (_p("Thirugnana Sambanthar Moorthy Temple, Town"), _p("Thirugnana Sambanthar Moorthy Madam, Town")),
     # Same name, far apart.
     (_p("Kamakshi Amman Temple", 12.84, 79.70), _p("Arulmigu Kamakshi Amman Temple, Mangadu", 13.03, 80.11)),

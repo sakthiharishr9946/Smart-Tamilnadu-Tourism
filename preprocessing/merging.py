@@ -223,6 +223,8 @@ def _merge_group(group):
 
 SPELLING_DUPLICATE_THRESHOLD = 0.88
 SPELLING_DUPLICATE_MAX_KM = 2.0
+LARGE_AREA_MAX_KM = 15.0
+_LARGE_AREA_TYPES = {"sanctuary", "lake", "hill", "island"}
 
 # Words that only say what kind of place it is -> one canonical type each.
 _PLACE_TYPES = {
@@ -238,8 +240,26 @@ _PLACE_TYPES = {
     "mandapa": "mandapam", "mandapam": "mandapam", "memorial": "memorial",
     "park": "park", "garden": "park", "gardens": "park", "sanctuary": "sanctuary",
     "hill": "hill", "hills": "hill", "malai": "hill", "peak": "hill",
-    "island": "island", "lighthouse": "lighthouse",
+    "island": "island", "lighthouse": "lighthouse", "reservoir": "dam",
 }
+# One deity, many names: "Maruthamalai Murugan Temple" is the "Arulmigu
+# Subramaniaswamy Temple, Maruthamalai".
+_DEITY_SYNONYMS = (
+    (r"^(?:subra[h]?man\w*|murug\w*|karthike\w*|kartikey\w*|shanmuga\w*|kandasw\w*|kandasam\w*|"
+     r"d[h]?andayuthapani\w*)$", "murugan"),
+)
+# Renamed sites, by name key -> current name.
+_KNOWN_RENAMES = {
+    "indira gandhi national park": "Anamalai Tiger Reserve",
+    "indira gandhi wildlife sanctuary": "Anamalai Tiger Reserve",
+    "indira gandhi wild life sanctuary": "Anamalai Tiger Reserve",
+}
+# Multi-word kinds of place, folded into one type word first.
+_TYPE_PHRASES = (
+    (r"\bwater\s+falls?\b", "waterfalls"),  # "Hogenakkal Water Falls"
+    (r"\b(?:national\s+park|wild\s*life\s+sanctuary|wild\s*life\s+reserve|tiger\s+reserve|"
+     r"birds?\s+sanctuary)\b", "sanctuary"),
+)
 # Words that carry no identity at all.
 _FILLER_WORDS = {"arulmigu", "sri", "shri", "shree", "sree", "the", "csi", "new", "old", "and", "of", "at", "swamy",
                  "swami", "samy", "thiru", "tiru"}
@@ -267,9 +287,13 @@ def _name_parts(place_name, district=None):
     import re
     from services.data_quality import name_key
     head, _, rest = str(place_name or "").partition(",")
-    head = re.sub(r"\bwater\s+falls?\b", "waterfalls", head, flags=re.IGNORECASE)  # "Hogenakkal Water Falls"
+    head = _KNOWN_RENAMES.get(name_key(head), head)
+    for pattern, replacement in _TYPE_PHRASES:
+        head = re.sub(pattern, replacement, head, flags=re.IGNORECASE)
     district_tokens = set(name_key(district).split()) if district else set()
     tokens = name_key(head).split()
+    for pattern, replacement in _DEITY_SYNONYMS:
+        tokens = [replacement if re.match(pattern, token) else token for token in tokens]
     types = {_PLACE_TYPES[t] for t in tokens if t in _PLACE_TYPES}
     identity = "".join(t for t in tokens
                        if t not in _PLACE_TYPES and t not in _FILLER_WORDS and t not in district_tokens)
@@ -282,6 +306,16 @@ def _name_parts(place_name, district=None):
             break
     locality = phonetic_key(name_key(rest.split(",")[0])).replace(" ", "") if rest.strip() else ""
     return re.sub(r"(.)\1+", r"\1", phonetic_key(identity)), types, locality
+
+
+def _village_in_name(bare_identity, village, identity):
+    """True when ``bare_identity`` is village + identity written as one name
+    ("maruthamalai" + "murugan"), allowing transliteration differences."""
+    import difflib
+    if len(village) < 4 or not bare_identity:
+        return False
+    combined = (village + identity).translate(_VOICING)
+    return difflib.SequenceMatcher(None, bare_identity.translate(_VOICING), combined).ratio() >= 0.92
 
 
 def _same_locality(a, b):
@@ -305,6 +339,16 @@ def is_spelling_duplicate(a, b):
     id_a, types_a, _ = _name_parts(a.get("place_name"), a.get("district"))
     id_b, types_b, _ = _name_parts(b.get("place_name"), b.get("district"))
     locs_a, locs_b = place_localities(a), place_localities(b)
+    # "Maruthamalai Murugan Temple" names its village inside the name; its
+    # twin "Arulmigu Subramaniaswamy Temple, Maruthamalai" after a comma.
+    if not locs_a and locs_b and len(id_b) >= 5:
+        for loc in locs_b:
+            if _village_in_name(id_a, loc, id_b):
+                return (types_a == types_b) and _same_consonants(id_a, loc + id_b)
+    if not locs_b and locs_a and len(id_a) >= 5:
+        for loc in locs_a:
+            if _village_in_name(id_b, loc, id_a):
+                return (types_a == types_b) and _same_consonants(id_b, loc + id_a)
     if len(id_a) < 5 or len(id_b) < 5 or id_a[0] != id_b[0]:
         return False
     # Same kind of place. A bare name ("Pykara", "Nagore") is usually the
@@ -330,6 +374,9 @@ def is_spelling_duplicate(a, b):
         return bool(coords_a and coords_b) and _distance_km(coords_a, coords_b) <= 3.0
     exact = [r for r in (a, b) if _coords(r) and r.get("location_precision") != "locality"]
     if len(exact) == 2:
-        return _distance_km(_coords(exact[0]), _coords(exact[1])) <= SPELLING_DUPLICATE_MAX_KM
+        # Reserves, lakes and hills are large: their mapped centres can sit
+        # several km apart (Anamalai Tiger Reserve / Indira Gandhi National Park).
+        limit = LARGE_AREA_MAX_KM if types_a & _LARGE_AREA_TYPES else SPELLING_DUPLICATE_MAX_KM
+        return _distance_km(_coords(exact[0]), _coords(exact[1])) <= limit
     # Without two surveyed positions the names alone must be near-identical.
     return similarity >= 0.92

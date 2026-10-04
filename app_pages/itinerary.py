@@ -10,7 +10,7 @@ from services.ai.insights import (
 )
 from services.budget.calculator import calculate_total_budget
 from services.budget.cost_rules import get_budget_rules
-from services.itinerary.generator import generate_itinerary
+from services.itinerary.planner import plan_trip
 from services.nearby.distance import calculate_distance
 from services.recommendation.popularity import (
     add_popularity_to_places,
@@ -80,6 +80,12 @@ CURRENCY_RATES = {
 }
 
 
+# "Plan For Me" looks this far around the start place (km, straight line),
+# a little further for each extra day.
+PLAN_FOR_ME_RADIUS_KM = 40
+PLAN_FOR_ME_EXTRA_KM_PER_DAY = 25
+
+
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
@@ -95,26 +101,33 @@ def _unique(values):
     )
 
 
-def _place_label(place):
+def _place_label(place, show_district=False):
+    """"Name — Town, District · Type · 12 km", skipping parts the name already says.
+
+    Showing the district tells apart look-alikes such as Maruthamalai
+    (Coimbatore) and Maruthwamalai (Kanyakumari).
+    """
     place_name = str(
         place.get("place_name")
         or "Unknown Place"
     ).strip()
+    lowered = place_name.casefold()
 
-    city = str(
-        place.get("city_town")
-        or place.get("city")
-        or ""
-    ).strip()
+    where = []
+    city = str(place.get("city_town") or place.get("city") or "").strip()
+    if city and city.casefold() not in lowered:
+        where.append(city.title() if city.islower() else city)
+    district = str(place.get("district") or "").strip()
+    if show_district and district and district.casefold() not in lowered and \
+            district.casefold() not in (w.casefold() for w in where):
+        where.append(district)
 
-    if (
-        city
-        and city.casefold()
-        != place_name.casefold()
-    ):
-        return f"{place_name} - {city}"
-
-    return place_name
+    label = place_name + (f" — {', '.join(where)}" if where else "")
+    if show_district and place.get("category_name"):
+        label += f" · {place['category_name']}"
+    if place.get("distance_km") is not None:
+        label += f" · {float(place['distance_km']):.0f} km"
+    return label
 
 
 def _place_map(places):
@@ -152,7 +165,8 @@ def _place_select(
         list(lookup.keys()),
         key=key,
         format_func=lambda place_id: _place_label(
-            lookup[place_id]
+            lookup[place_id],
+            show_district=True,
         ),
     )
 
@@ -411,26 +425,47 @@ def _select_plan_for_me_places(
     end_time,
 ):
     """
-    Select a reasonable number of highly-rated places.
+    Pick well-known places near the start, as many as the days can hold.
 
-    The existing itinerary generator remains responsible
-    for the actual day/time scheduling.
+    ``candidates`` carry ``distance_km`` from the start place. The trip
+    planner then decides the days, order and times (and leaves out any
+    place that does not fit).
     """
 
     if not candidates:
         return []
 
-    # A reasonable upper limit prevents the generated
-    # itinerary from becoming overloaded.
-    max_places = max(
-        1,
-        min(
-            len(candidates),
-            int(days) * 4,
-        ),
-    )
+    hours = max(2.0, (end_time.hour * 60 + end_time.minute - start_time.hour * 60 - start_time.minute) / 60)
+    # About one stop per two hours (visit + drive), a few spare for the planner.
+    wanted = max(2, round(int(days) * hours / 2)) + 2
+    radius = PLAN_FOR_ME_RADIUS_KM + PLAN_FOR_ME_EXTRA_KM_PER_DAY * (int(days) - 1)
 
-    return candidates[:max_places]
+    # Only places that can go on the map, near enough to reach.
+    located = [p for p in candidates if p.get("latitude") is not None and p.get("longitude") is not None]
+    nearby = [p for p in located if p.get("distance_km") is None or float(p["distance_km"]) <= radius]
+
+    def score(place):
+        popularity = float(place.get("popularity_score") or 0)
+        distance = float(place.get("distance_km") or 0)
+        return popularity - 0.5 * distance
+
+    ranked = sorted(nearby, key=score, reverse=True)
+
+    # A varied trip: no single kind of place takes more than half the
+    # slots, unless that is all the traveller asked for.
+    per_kind_limit = max(2, (wanted + 1) // 2)
+    chosen, per_kind = [], {}
+    for place in ranked:
+        kind = place.get("category_name") or "Other"
+        if per_kind.get(kind, 0) >= per_kind_limit:
+            continue
+        chosen.append(place)
+        per_kind[kind] = per_kind.get(kind, 0) + 1
+        if len(chosen) >= wanted:
+            break
+    if len(chosen) < wanted:
+        chosen += [p for p in ranked if p not in chosen][: wanted - len(chosen)]
+    return chosen
 
 
 def _calculate_route_distance(
@@ -477,16 +512,18 @@ def _calculate_budget(
     days,
     budget_level,
     start_place=None,
+    distance_km=None,
 ):
     nights = max(
         0,
         int(days) - 1,
     )
 
-    distance_km = _calculate_route_distance(
-        selected_places,
-        start_place,
-    )
+    if distance_km is None:
+        distance_km = _calculate_route_distance(
+            selected_places,
+            start_place,
+        )
 
     rules = get_budget_rules(
         budget_level
@@ -535,6 +572,8 @@ def _clear_generated_results():
         "generated_trip_budget_level",
         "generated_trip_start_place",
         "generated_trip_mode",
+        "generated_unscheduled",
+        "generated_total_km",
     ]
 
     for key in generated_keys:
@@ -562,8 +601,9 @@ def _run_itinerary_generation(
     """
 
     try:
-        itinerary = generate_itinerary(
+        plan = plan_trip(
             selected_places,
+            start_place=starting_place,
             days=int(days),
             start_time=start_time.strftime(
                 "%H:%M"
@@ -578,6 +618,21 @@ def _run_itinerary_generation(
             f"Unable to generate itinerary: {error}"
         )
         return False
+
+    # "schedule" (visits only) keeps the AI notes and older views working;
+    # "entries" adds lunch breaks for the timeline.
+    itinerary = [
+        {**day, "schedule": [e for e in day["entries"] if e["kind"] == "visit"]}
+        for day in plan["days"]
+    ]
+    planned_places = [
+        entry["place"]
+        for day in itinerary
+        for entry in day["schedule"]
+        if not entry.get("is_start")
+    ]
+    st.session_state["generated_unscheduled"] = plan["unscheduled"]
+    st.session_state["generated_total_km"] = plan["total_km"]
 
     if not itinerary:
         st.warning(
@@ -616,7 +671,7 @@ def _run_itinerary_generation(
 
     st.session_state[
         "generated_trip_selected_count"
-    ] = len(selected_places)
+    ] = len(planned_places)
 
     # --------------------------------------------------------
     # AI NOTES
@@ -640,11 +695,12 @@ def _run_itinerary_generation(
     try:
         budget, distance_km = (
             _calculate_budget(
-                selected_places,
+                planned_places,
                 travelers,
                 days,
                 budget_level,
                 starting_place,
+                distance_km=plan["total_km"],
             )
         )
 
@@ -658,7 +714,7 @@ def _run_itinerary_generation(
 
         st.session_state[
             "budget_calculated_places"
-        ] = selected_places
+        ] = planned_places
 
     except Exception as error:
         st.warning(
@@ -982,9 +1038,26 @@ def render_itinerary_page():
                         interest_candidates
                     )
 
+            # The start place is already the first stop of day 1.
+            if starting_place:
+                candidates = [
+                    place
+                    for place in candidates
+                    if place.get("place_id") != starting_place.get("place_id")
+                ]
+
             candidates = _rank_places(
-                candidates
+                _add_distances(candidates, starting_place)
             )
+            # Nearest first when the start is on the map; places without a
+            # map location go last.
+            if starting_place and starting_place.get("latitude") is not None:
+                candidates.sort(
+                    key=lambda place: (
+                        place.get("distance_km") is None,
+                        place.get("distance_km") or 0,
+                    )
+                )
 
             selected_places = (
                 _place_multiselect(
@@ -1001,17 +1074,19 @@ def render_itinerary_page():
             )
 
             st.info(
-                "We will select highly-rated places "
-                "that match your interests and fit "
-                "your selected number of days and "
-                "available time."
+                "We pick well-known places near your start that match "
+                "your interests, then plan each day around one area: "
+                "temples in the morning or after 4 pm, parks, dams and "
+                "waterfalls in daylight, museums at midday."
             )
 
+            # Around the start place by distance, unless a district was
+            # chosen explicitly (start places near a border have their
+            # nearest sights in the next district).
             candidate_places = (
-                _filter_by_district(
-                    places,
-                    effective_district,
-                )
+                _filter_by_district(places, selected_district)
+                if selected_district != "Not specified"
+                else list(places)
             )
 
             # Remove the starting place.
@@ -1068,43 +1143,25 @@ def render_itinerary_page():
 
                     for place in selected_places:
 
-                        try:
-                            rating = float(
-                                place.get(
-                                    "rating",
-                                    0,
-                                )
-                                or 0
-                            )
-                        except (
-                            TypeError,
-                            ValueError,
-                        ):
-                            rating = 0.0
-
                         distance = place.get(
                             "distance_km"
                         )
-
-                        if distance is not None:
-
-                            distance_text = (
-                                f" • {float(distance):.1f} km"
-                            )
-
-                        else:
-
-                            distance_text = ""
+                        distance_text = (
+                            f" • {float(distance):.0f} km from start"
+                            if distance is not None
+                            else ""
+                        )
 
                         st.markdown(
-                            f"- **{escape(_place_label(place))}** "
-                            f"⭐ {rating:.1f}"
+                            f"- **{escape(str(place.get('place_name') or 'Place'))}** "
+                            f"• {escape(str(place.get('category_name') or 'Destination'))}"
                             f"{distance_text}"
                         )
 
                     st.caption(
-                        "Places are prioritized by rating, "
-                        "then popularity and distance."
+                        "Chosen by how well-known each place is and how "
+                        "close it is to your start. Places that do not fit "
+                        "your days are listed after the plan."
                     )
 
             else:
@@ -1317,52 +1374,36 @@ def render_itinerary_page():
     # REMAINING PLACES
     # --------------------------------------------------------
 
-    remaining = []
+    remaining = st.session_state.get("generated_unscheduled") or []
+    mode_is_auto = "Plan For Me" in generated_mode
 
-    if itinerary:
-
-        remaining = itinerary[-1].get(
-            "remaining_places",
-            [],
-        )
-
-    scheduled_count = sum(
-        len(
-            day.get(
-                "schedule",
-                [],
-            )
-        )
-        for day in itinerary
-    )
-
-    if remaining:
-
+    if remaining and not mode_is_auto:
+        # Manual picks that could not be planned: say why, not just which.
         st.warning(
-            f"{scheduled_count} of "
-            f"{generated_count} selected places "
-            f"fit within the available time."
+            f"{len(remaining)} of your places did not fit into "
+            f"{generated_days} day(s) without long detours or visiting "
+            "them when they are closed. Add a day, or pick places "
+            "closer together."
         )
-
         st.markdown(
-            "**Places not included in the schedule:**"
-        )
-
-        st.write(
-            ", ".join(
-                place.get(
-                    "place_name",
-                    "Unknown Place",
-                )
+            "**Not included:** "
+            + ", ".join(
+                escape(str(place.get("place_name", "Unknown Place")))
                 for place in remaining
             )
         )
-
-    else:
-
+    elif not remaining:
         st.success(
             "All selected places fit within "
             "your available travel time."
+        )
+
+    total_km = st.session_state.get("generated_total_km")
+    if total_km:
+        st.caption(
+            f"About {float(total_km):.0f} km of driving in total. Times include "
+            "driving between stops; temples are planned for the morning or after "
+            "4 pm, parks, dams and waterfalls in daylight."
         )
 
     # --------------------------------------------------------
@@ -1380,6 +1421,8 @@ def render_itinerary_page():
                 "schedule",
                 [],
             ),
+            entries=day.get("entries"),
+            drive_km=day.get("drive_km"),
         )
 
     # ========================================================
