@@ -3,9 +3,10 @@ import streamlit.components.v1 as components
 # Runs inside Streamlit's component iframe, which is same-origin, so it can
 # reach into the parent document to animate elements Streamlit itself
 # rendered. Elements marked class="reveal" fade/slide in the first time they
-# scroll into view. If cross-frame access is ever blocked, the app still
-# works: reveal.in-view is only required by CSS scoped under
-# body.js-scroll-ready, so unstyled elements simply stay visible.
+# scroll into view; common page sections (cards, metrics, timeline stops,
+# panels) get a subtle 3D tilt-in (.reveal-3d) on every page. If
+# cross-frame access is ever blocked, the app still works: both states are
+# only styled under body.js-scroll-ready, so elements simply stay visible.
 _SCROLL_REVEAL_HTML = """
 <script>
 (function () {
@@ -28,10 +29,29 @@ _SCROLL_REVEAL_HTML = """
         });
     }, { threshold: 0.12, rootMargin: "0px 0px -60px 0px" });
 
+    // Page sections that get the 3D scroll-in on every page, without each
+    // page having to mark them. Only blocks below the first screen animate,
+    // so nothing already visible flickers when Streamlit reruns.
+    var SECTIONS = [
+        ".section-title", ".info-card", ".timeline-item", ".timeline-break",
+        ".festival-row", ".place-photo", ".planner-panel-title",
+        "[data-testid='stMetric']", "[data-testid='stExpander']",
+        "[data-testid='stAlert']", "[data-testid='stVerticalBlockBorderWrapper']",
+        "[class*='st-key-planner_panel']", ".stPlotlyChart", ".place-card"
+    ].join(",");
+
     function scan() {
         var items = doc.querySelectorAll(".reveal:not(.reveal-bound)");
         items.forEach(function (el) {
             el.classList.add("reveal-bound");
+            observer.observe(el);
+        });
+        var fold = window.parent.innerHeight;
+        doc.querySelectorAll(SECTIONS).forEach(function (el) {
+            if (el.classList.contains("reveal-bound") || el.classList.contains("reveal")) return;
+            el.classList.add("reveal-bound");
+            if (el.closest(".reveal-3d") || el.getBoundingClientRect().top < fold) return;
+            el.classList.add("reveal-3d");
             observer.observe(el);
         });
     }

@@ -126,14 +126,18 @@ def _find_named_place(message):
 
 def _describe_places(places, heading):
     lines = []
-    for index, row in enumerate(places[:8], 1):
+    for row in places[:6]:
         place = dict(row)
         description = str(place.get("description") or "").strip()
-        if len(description) > 140:
-            description = description[:137].rsplit(" ", 1)[0] + "..."
-        detail = f" - {description}" if len(description) >= 40 else ""
-        lines.append(f"{index}. {place.get('place_name')} ({place.get('district')}, {place.get('category_name')}){detail}")
-    return heading + "\n\n" + "\n".join(lines)
+        if len(description) > 150:
+            description = description[:147].rsplit(" ", 1)[0] + "…"
+        detail = f" – {description}" if len(description) >= 40 else ""
+        # Only name the town when it adds something to the district asked about.
+        town = str(place.get("city_town") or "").strip()
+        where = f" ({town.title() if town.islower() else town})" if town and town.casefold() not in (
+            str(place.get("district") or "").casefold(), str(place.get("place_name") or "").casefold()) else ""
+        lines.append(f"- **{place.get('place_name')}**{where}{detail}")
+    return heading + "\n\n" + "\n".join(lines) + "\n\nWant me to fit some of these into a day plan?"
 
 
 def _once_each(festivals):
@@ -154,12 +158,26 @@ def _festival_answer(district):
                            and str(r.get("start_date") or "") >= today])[:6]
     parts = []
     if local:
-        parts.append(f"Festivals in {district}: " + "; ".join(
-            r["festival_name"] + (f" (month {r['month']})" if r.get("month") else "") for r in local[:8]))
+        parts.append(f"In {district}, the big local celebrations are:\n" + "\n".join(
+            f"- **{r['festival_name']}**" + (f" (usually in {_MONTHS[int(r['month'])]})" if r.get("month") else "")
+            for r in local[:8]))
     if upcoming:
-        parts.append("Upcoming across Tamil Nadu: " + "; ".join(
-            f"{r['festival_name']} on {r['start_date']}" for r in upcoming))
-    return "\n".join(parts) or None
+        parts.append("Coming up across Tamil Nadu:\n" + "\n".join(
+            f"- **{r['festival_name']}** on {_nice_date(r['start_date'])}" for r in upcoming))
+    return "\n\n".join(parts) or None
+
+
+_MONTHS = ("", "January", "February", "March", "April", "May", "June", "July", "August", "September",
+           "October", "November", "December")
+
+
+def _nice_date(iso_date):
+    """"2027-01-15" -> "15 January 2027"."""
+    try:
+        year, month, day = (int(x) for x in str(iso_date).split("-"))
+        return f"{day} {_MONTHS[month]} {year}"
+    except (ValueError, IndexError):
+        return str(iso_date)
 
 
 def _grounded_answer(message):
@@ -180,21 +198,31 @@ def _grounded_answer(message):
     named = _find_named_place(message)
     if named and not (district and category):
         description = str(named.get("description") or "").strip()
-        return (f"{named['place_name']} is a {str(named.get('category_name') or 'tourist').lower()} destination "
-                f"in {named.get('district')} district. {description}").strip()
+        kind = str(named.get("category_name") or "tourist").lower()
+        article = "an" if kind[:1] in "aeiou" else "a"
+        return (f"**{named['place_name']}** is {article} {kind} spot in {named.get('district')} district. "
+                f"{description}").strip()
 
     if district or category:
         places = [dict(p) for p in find_places(district=district, category_name=category, limit=8)]
         if not places and district and category:
             places = [dict(p) for p in find_places(district=district, limit=8)]
-            heading = f"I don't have {category.lower()} listings in {district}, but these are its top destinations:"
+            heading = (f"I couldn't find {category.lower()} spots in {district}, "
+                       f"but here's what people love most there:")
         else:
-            what = f"{category.lower()} destinations" if category else "destinations"
-            where = f" in {district}" if district else " in Tamil Nadu"
-            heading = f"Top {what}{where}:"
+            what = _CATEGORY_PHRASES.get(category, "places") if category else "places"
+            where = f"in {district}" if district else "across Tamil Nadu"
+            heading = f"Here are some {what} {where} worth your time:"
         if places:
             return _describe_places(places, heading)
     return None
+
+
+_CATEGORY_PHRASES = {
+    "Temple": "temples", "Beach": "beaches", "Hill": "hill spots", "Waterfall": "waterfalls",
+    "Wildlife": "wildlife spots", "Heritage": "heritage sites", "Historical": "historic sites",
+    "Nature": "nature spots", "Cultural": "cultural sights", "Adventure": "fun, adventurous places",
+}
 
 
 def _format_places(places, prefix="Here are some suitable places:"):
@@ -207,9 +235,9 @@ def _format_places(places, prefix="Here are some suitable places:"):
 def generate_response(message):
     if not message or not message.strip():
         return (
-            "Hello! I can help you explore Tamil Nadu "
-            "tourist destinations, temples, beaches, "
-            "festivals, itineraries and budgets."
+            "Vanakkam! Ask me anything about travelling in Tamil Nadu - "
+            "temples, beaches, hill stations, festivals, or where to go "
+            "on your next trip."
         )
 
     intent = detect_intent(message)
@@ -239,18 +267,18 @@ def generate_response(message):
 
         if not places:
             return (
-                "I couldn't find matching tourist places. "
-                "Try searching for a city, district or "
-                "tourism category."
+                "Hmm, I couldn't find a match for that. Try a town or "
+                "district name, or a kind of place - say, \"beaches near "
+                "Chennai\" or \"temples in Thanjavur\"."
             )
 
-        return _format_places(places, "Here are some places you can explore:")
+        return _format_places(places, "A few places you might enjoy:")
 
     if intent == "category":
         places = search_tourist_places(search_term)
 
         if places:
-            return _format_places(places, "Some matching destinations are:")
+            return _format_places(places, "These look like a good match:")
 
     if intent == "nearby":
         location = get_current_location()
@@ -260,7 +288,7 @@ def generate_response(message):
             places = []
 
         if places:
-            return _format_places(places, "Nearby destinations ranked for you:")
+            return _format_places(places, "Closest to you right now:")
 
         return (
             "I don't know where you are yet. Press the 📍 GPS button on the "
@@ -277,23 +305,24 @@ def generate_response(message):
             return knowledge
 
         return (
-            "Tamil Nadu has many cultural and religious "
-            "festivals. You can search for a specific "
-            "festival or destination."
+            "Tamil Nadu celebrates something almost every month! Tell me "
+            "a district - like \"festivals in Madurai\" - and I'll list "
+            "the big local ones and what's coming up next."
         )
 
     if intent == "budget":
         return (
-            "I can help estimate your travel budget. "
-            "Provide the number of travelers, trip "
-            "duration and preferred budget level."
+            "Happy to help with costs! Open the Itinerary tab, pick your "
+            "places, days and budget level, and you'll get a day plan with "
+            "an estimated budget right below it."
         )
 
     if intent == "itinerary":
         return (
-            "I can create a Tamil Nadu itinerary based "
-            "on your destinations, trip duration, "
-            "interests and budget."
+            "Let's plan it! On the Itinerary tab, choose where you're "
+            "starting from and how many days you have - or let \"Plan for "
+            "me\" pick the highlights. It'll time temples for mornings and "
+            "evenings and keep each day in one area."
         )
 
     knowledge = search_knowledge(message)
@@ -306,17 +335,15 @@ def generate_response(message):
     if place:
         place = dict(place)
         return (
-            f"{place.get('place_name', 'This destination')} "
-            f"is located in "
-            f"{place.get('district', 'Tamil Nadu')}. "
-            f"{place.get('description', '')}"
-        )
+            f"**{place.get('place_name', 'This place')}** is in "
+            f"{place.get('district', 'Tamil Nadu')} district. "
+            f"{place.get('description') or ''}"
+        ).strip()
 
     return (
-        "I can help you with Tamil Nadu tourism. "
-        "You can ask me about tourist places, temples, "
-        "beaches, festivals, nearby destinations, "
-        "itineraries or travel budgets."
+        "I'm not sure I caught that. You can ask me things like "
+        "\"best waterfalls near Coimbatore\", \"tell me about Marina Beach\", "
+        "\"festivals in Madurai\" or \"what's near me?\"."
     )
 
 

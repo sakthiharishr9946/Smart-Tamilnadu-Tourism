@@ -2,8 +2,22 @@ from html import escape
 
 import streamlit as st
 
-from ui.category_content import category_info, resolve_description
+from ui.category_content import resolve_description
 from ui.data import has_photo
+
+
+def _duration_text(minutes, about=True):
+    """75 -> "about 1 hr 15 min", 150 -> "about 2 hrs 30 min"."""
+    minutes = int(minutes or 0)
+    hours, rest = divmod(minutes, 60)
+    unit = "hr" if hours == 1 else "hrs"
+    if hours and rest:
+        text = f"{hours} {unit} {rest} min"
+    elif hours:
+        text = f"{hours} {unit}"
+    else:
+        text = f"{rest} min"
+    return f"about {text}" if about else text
 
 
 def _render_drive(item):
@@ -12,19 +26,29 @@ def _render_drive(item):
     km = item.get("travel_km")
     if not minutes and not km:
         return
-    distance = f"{km:.0f} km · " if km else ""
-    wait = item.get("wait_minutes") or 0
-    wait_text = f" · {wait} min free time before it opens" if wait >= 20 else ""
+    distance = f" ({km:.0f} km)" if km else ""
     st.markdown(
-        f'<div class="timeline-drive">🚗 {distance}about {minutes} min drive{wait_text}</div>',
+        f'<div class="timeline-drive">{escape(f"🚗 Drive {_duration_text(minutes)}{distance}")}</div>',
         unsafe_allow_html=True,
     )
 
 
+def _render_wait(item):
+    """Lunch and free time between arriving and the place opening (temples reopen at 4 pm)."""
+    if item.get("lunch_before"):
+        _render_lunch(item["lunch_before"])
+    if (item.get("wait_minutes") or 0) >= 20:
+        st.markdown(
+            f'<div class="timeline-drive">☕ Free time until {escape(str(item.get("start_time", "")))} '
+            "– rest, or explore the area before it opens</div>",
+            unsafe_allow_html=True,
+        )
+
+
 def _render_lunch(item):
     st.markdown(
-        f'<div class="timeline-break">🍽️ {item.get("start_time", "")} - {item.get("end_time", "")}'
-        " &nbsp;Lunch break</div>",
+        f'<div class="timeline-break">🍽️ {item.get("start_time", "")} – {item.get("end_time", "")}'
+        " &nbsp;·&nbsp; Lunch break – a good time to try a local meals place nearby</div>",
         unsafe_allow_html=True,
     )
 
@@ -41,6 +65,7 @@ def render_itinerary_timeline(schedule, entries=None):
             _render_lunch(item)
             continue
         _render_drive(item)
+        _render_wait(item)
         place = item.get("place", {})
 
         place_name_raw = str(place.get("place_name", "Unknown Place"))
@@ -52,11 +77,10 @@ def render_itinerary_timeline(schedule, entries=None):
 
         city = place.get("city_town")
         district_raw = str(place.get("district") or "Tamil Nadu")
-        location_raw = f"{city}, {district_raw}" if city else district_raw
-        location = escape(location_raw)
+        location_raw = f"{city}, {district_raw}" if city and city.casefold() != district_raw.casefold() else district_raw
+        location = escape(location_raw.title() if location_raw.islower() else location_raw)
 
-        category_raw = str(place.get("category_name") or "Tourist Attraction")
-        category = escape(category_raw)
+        category = escape(str(place.get("category_name") or "Tourist Attraction"))
 
         full_description = resolve_description(
             place.get("description"),
@@ -73,12 +97,10 @@ def render_itinerary_timeline(schedule, entries=None):
             if has_photo(place) else ""
         )
 
-        famous_for = escape(category_info(place.get("category_name"))["famous_for"])
-
         entry_fee = place.get("entry_fee")
-        entry_fee_text = f"₹{entry_fee:g}" if entry_fee else "Free / Not available"
+        fee_text = f"Entry ₹{entry_fee:g}" if entry_fee else "Usually free to enter"
 
-        start_badge = ' <span class="timeline-start">Start of trip</span>' if item.get("is_start") else ""
+        start_badge = ' <span class="timeline-start">You start here</span>' if item.get("is_start") else ""
         note = str(item.get("note") or "")
         timing_note = f'<div class="timeline-note">🕒 {escape(note)}</div>' if note else ""
 
@@ -86,7 +108,7 @@ def render_itinerary_timeline(schedule, entries=None):
             f"""
             <div class="timeline-item reveal"><div class="timeline-row"><div class="timeline-text">
                 <div class="timeline-time">
-                    {start_time} - {end_time}{start_badge}
+                    {start_time} – {end_time}{start_badge}
                 </div>
                 <div class="timeline-title">
                     {place_name}
@@ -96,18 +118,30 @@ def render_itinerary_timeline(schedule, entries=None):
                 </div>
                 <div class="place-card-description">
                     {description}
-                </div>
-                <div class="place-card-description">
-                    <strong>Famous for:</strong> {famous_for}
-                </div>
-                <div class="place-card-description">
-                    Visit duration: {duration} minutes
-                    &nbsp;•&nbsp; Entry fee: {entry_fee_text}
                 </div>{timing_note}
+                <div class="timeline-meta">
+                    ⏱ Spend {_duration_text(duration)} here &nbsp;·&nbsp; {fee_text}
+                </div>
             </div>{photo_html}</div></div>
             """,
             unsafe_allow_html=True,
         )
+
+
+def day_summary(schedule, drive_km=None):
+    """"An easy day around Chengalpattu · 2 stops · about 58 km on the road"."""
+    stops = len(schedule or [])
+    pace = "An easy day" if stops <= 2 else ("A well-paced day" if stops <= 4 else "A full day")
+    districts = []
+    for item in schedule or []:
+        district = str((item.get("place") or {}).get("district") or "").strip()
+        if district and district not in districts:
+            districts.append(district)
+    around = f" around {' & '.join(districts[:2])}" if districts else ""
+    parts = [f"{pace}{around}", f"{stops} stop{'s' if stops != 1 else ''}"]
+    if drive_km:
+        parts.append(f"about {float(drive_km):.0f} km on the road")
+    return " · ".join(parts)
 
 
 def render_day_timeline(
@@ -116,16 +150,12 @@ def render_day_timeline(
     entries=None,
     drive_km=None,
 ):
-    stops = len(schedule or [])
-    summary = f"{stops} stop{'s' if stops != 1 else ''}"
-    if drive_km:
-        summary += f" · about {float(drive_km):.0f} km driving"
     st.markdown(
         f"""
         <div class="section-title">
             Day {day_number}
         </div>
-        <div class="timeline-day-summary">{summary}</div>
+        <div class="timeline-day-summary">{escape(day_summary(schedule, drive_km))}</div>
         """,
         unsafe_allow_html=True,
     )

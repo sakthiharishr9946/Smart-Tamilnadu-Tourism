@@ -50,6 +50,31 @@ body.js-scroll-ready .reveal.in-view {
     transform: translateY(0);
 }
 
+/* 3D scroll-in for page sections on every page (tagged by
+   scroll_effects.py): a slight backward tilt that settles flat as the
+   block rises into view. */
+body.js-scroll-ready .reveal-3d {
+    opacity: 0;
+    transform: perspective(1200px) rotateX(9deg) translateY(36px) scale(0.985);
+    transform-origin: 50% 100%;
+    transition:
+        opacity 0.75s var(--ease),
+        transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity;
+}
+
+body.js-scroll-ready .reveal-3d.in-view {
+    opacity: 1;
+    transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.js-scroll-ready .reveal-3d {
+        opacity: 1;
+        transform: none;
+    }
+}
+
 
 /* =========================================================
    HERO SHOWCASE
@@ -255,9 +280,13 @@ body.js-scroll-ready .reveal.in-view {
     padding: 0 2rem 2rem 2rem;
 }
 
+/* Use most of a wide screen: a fixed 1400px column left large empty
+   strips on 1920px displays. */
 .block-container {
-    max-width: 1400px;
-    padding-top: 1.5rem;
+    max-width: min(1760px, 94vw);
+    padding-top: 1.25rem;
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
     animation: fadeIn 0.5s var(--ease);
 }
 
@@ -1657,4 +1686,10 @@ hr {
     margin-top: 0.25rem;
     font-size: 12.5px;
     color: var(--accent-strong, #0f766e);
+}
+
+.timeline-meta {
+    margin-top: 0.35rem;
+    font-size: 13px;
+    color: var(--text-secondary, #64748b);
 }

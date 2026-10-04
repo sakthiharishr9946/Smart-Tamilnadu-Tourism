@@ -29,11 +29,11 @@ PARKING_MINUTES = 10
 UNKNOWN_LEG_MINUTES = 30        # a stop without map coordinates
 MAX_LEG_MINUTES = 150           # never plan a single drive longer than this
 MAX_STOPS_PER_DAY = 6
-DAY_SPAN_KM = 45                # no two stops of one day further apart than this
+DAY_SPAN_KM = 60                # no two stops of one day further apart than this
 CANDIDATES_PER_STEP = 8         # nearest candidates tried when growing a day
 SEEDS_PER_DAY = 5               # areas tried as the first stop of a new day
 FIRST_LEG_MAX_MINUTES = 240     # the morning drive to a new area may be long
-MAX_WAIT_MINUTES = 150          # waiting for a temple to reopen is fine; longer is not
+MAX_WAIT_MINUTES = 270          # arriving at noon and waiting for a 4 pm temple reopening is fine
 LUNCH_FROM, LUNCH_UNTIL, LUNCH_MINUTES = 12 * 60 + 30, 14 * 60 + 30, 45
 NOT_PREFERRED_PENALTY = 40      # minutes-equivalent cost of a less ideal (but open) slot
 
@@ -84,6 +84,38 @@ def place_profile(place):
         stored = 0
     return ([(_hm(a), _hm(b)) for a, b in windows], [(_hm(a), _hm(b)) for a, b in preferred],
             stored if stored >= 20 else minutes, note)
+
+
+def _kind(place):
+    category = str(place.get("category_name") or place.get("category") or "").strip().casefold()
+    name = str(place.get("place_name") or "").casefold()
+    if any(w in name for w in ("museum", "gallery", "palace", "mahal")):
+        return "museum"
+    return category
+
+
+def timing_note(place, start_minute):
+    """One friendly line on why this stop sits at this time of day."""
+    kind, hour = _kind(place), start_minute / 60
+    morning, evening = hour < 12, hour >= 16
+    if kind == "temple":
+        if morning:
+            return "A morning darshan, before the temple closes for the afternoon."
+        if evening:
+            return "Timed for the evening, after the temple reopens at 4 pm - the evening pooja is worth staying for."
+        return "Temple hours vary - many close around 12:30-4 pm, so check locally."
+    if kind == "wildlife":
+        return ("Early hours are the best time to spot animals." if morning
+                else "Parks close by 6 pm, so this visit wraps up before dusk.")
+    if kind in ("waterfall", "nature", "hill"):
+        return ("Cooler in the morning, and the light is lovely for photos." if morning
+                else "A daylight visit - outdoor spots like this are best before 6 pm.")
+    if kind in ("museum", "heritage", "historical"):
+        return "Mostly indoors or shaded - a good way to spend the hottest part of the day." if 11 <= hour < 16             else "Monuments keep daytime hours, so this fits well here."
+    if kind == "beach":
+        return ("The beach is at its best in the evening breeze." if evening
+                else "Mornings here are calm and cool.")
+    return ""
 
 
 def _coords(place):
@@ -160,7 +192,7 @@ def _simulate(stops, origin, day_start, day_end, lunch=True):
     """
     now, here, cost, entries, lunched = day_start, origin, 0.0, [], not lunch
     for index, place in enumerate(stops):
-        windows, preferred, minutes, note = place_profile(place)
+        windows, preferred, minutes, _ = place_profile(place)
         # The very first stop of a trip with no known origin needs no drive.
         km, travel = (None, 0) if (here is None and index == 0) else drive(here, place)
         # The morning's first drive may be long (moving on to a new area); later hops may not.
@@ -183,12 +215,24 @@ def _simulate(stops, origin, day_start, day_end, lunch=True):
         finish = slot + minutes
         if finish > day_end:
             return None
+        wait = slot - arrive
+        # Waiting through lunchtime (e.g. for a temple to reopen at 4 pm):
+        # have lunch during the wait - after the drive, before the visit.
+        lunch_start, lunch_during_wait = max(arrive, LUNCH_FROM), None
+        if not lunched and lunch_start < LUNCH_UNTIL and lunch_start + LUNCH_MINUTES <= slot:
+            lunch_during_wait = {"start_time": _clock(lunch_start),
+                                 "end_time": _clock(lunch_start + LUNCH_MINUTES)}
+            lunched = True
+            wait -= LUNCH_MINUTES
         in_preferred = any(begin <= slot and slot + minutes <= end for begin, end in preferred)
-        cost += travel + 0.6 * (slot - arrive) + (0 if in_preferred else NOT_PREFERRED_PENALTY)
+        # Long idle time is allowed when nothing else fits, but costs more
+        # than the same time spent driving or at a less ideal hour.
+        cost += travel + 0.6 * wait + (0 if in_preferred else NOT_PREFERRED_PENALTY)
         entries.append({
             "kind": "visit", "place": place, "start_minute": slot, "end_minute": finish,
             "duration_minutes": minutes, "travel_km": km, "travel_minutes": travel,
-            "wait_minutes": slot - arrive, "note": note, "preferred_slot": in_preferred,
+            "wait_minutes": wait, "note": timing_note(place, slot), "preferred_slot": in_preferred,
+            "lunch_before": lunch_during_wait,
         })
         now, here = finish, _coords(place) or here
     return entries, cost
@@ -248,10 +292,11 @@ def plan_trip(places, start_place=None, days=1, start_time="09:00", end_time="18
         best = _best_day(chosen, origin, day_start, day_end, fixed_first=fixed) if fixed else None
         if fixed and best is None:
             # The start is always visited first, whatever its hours.
-            minutes, note = place_profile(fixed)[2], place_profile(fixed)[3]
+            minutes = place_profile(fixed)[2]
             best = ([{"kind": "visit", "place": fixed, "start_minute": day_start,
                       "end_minute": day_start + minutes, "duration_minutes": minutes, "travel_km": None,
-                      "travel_minutes": 0, "wait_minutes": 0, "note": note, "preferred_slot": False}], 0)
+                      "travel_minutes": 0, "wait_minutes": 0, "note": timing_note(fixed, day_start),
+                      "preferred_slot": False}], 0)
 
         if fixed:
             chosen, grown = _grow_day(chosen, remaining, origin, day_start, day_end, fixed)

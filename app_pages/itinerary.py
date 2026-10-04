@@ -671,7 +671,7 @@ def _run_itinerary_generation(
 
     st.session_state[
         "generated_trip_selected_count"
-    ] = len(planned_places)
+    ] = len(planned_places) + (1 if starting_place else 0)
 
     # --------------------------------------------------------
     # AI NOTES
@@ -1262,7 +1262,7 @@ def render_itinerary_page():
             if success:
 
                 st.success(
-                    "Your itinerary has been created successfully."
+                    "Your trip is ready - scroll down to see it."
                 )
 
     # ========================================================
@@ -1347,7 +1347,7 @@ def render_itinerary_page():
 
     with summary_col4:
         st.metric(
-            "Places",
+            "Stops",
             generated_count,
         )
 
@@ -1380,13 +1380,12 @@ def render_itinerary_page():
     if remaining and not mode_is_auto:
         # Manual picks that could not be planned: say why, not just which.
         st.warning(
-            f"{len(remaining)} of your places did not fit into "
-            f"{generated_days} day(s) without long detours or visiting "
-            "them when they are closed. Add a day, or pick places "
-            "closer together."
+            f"{'One place' if len(remaining) == 1 else f'{len(remaining)} places'} didn't fit into "
+            f"{generated_days} day{'s' if generated_days != 1 else ''} without a long detour or "
+            "arriving when it's closed. Add another day, or choose places closer together."
         )
         st.markdown(
-            "**Not included:** "
+            "**Saved for another trip:** "
             + ", ".join(
                 escape(str(place.get("place_name", "Unknown Place")))
                 for place in remaining
@@ -1394,16 +1393,15 @@ def render_itinerary_page():
         )
     elif not remaining:
         st.success(
-            "All selected places fit within "
-            "your available travel time."
+            f"Everything fits nicely into {generated_days} "
+            f"day{'s' if generated_days != 1 else ''}."
         )
 
     total_km = st.session_state.get("generated_total_km")
     if total_km:
         st.caption(
-            f"About {float(total_km):.0f} km of driving in total. Times include "
-            "driving between stops; temples are planned for the morning or after "
-            "4 pm, parks, dams and waterfalls in daylight."
+            f"You'll drive about {float(total_km):.0f} km in all. We've timed temples for "
+            "the morning or after 4 pm, and parks, dams and waterfalls for daylight."
         )
 
     # --------------------------------------------------------

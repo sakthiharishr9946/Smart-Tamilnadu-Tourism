@@ -69,5 +69,15 @@ def test_places_that_do_not_fit_are_reported_not_forced_in():
 
 def test_lunch_break_is_planned_on_a_full_day():
     plan = plan_trip([KONIAMMAN, EACHANARI, MUSEUM], START, days=1, start_time="09:00", end_time="19:00")
-    kinds = [e["kind"] for e in plan["days"][0]["entries"]]
-    assert "lunch" in kinds
+    entries = plan["days"][0]["entries"]
+    assert any(e["kind"] == "lunch" or e.get("lunch_before") for e in entries)
+
+
+def test_temple_after_a_long_drive_waits_for_the_evening_on_the_same_day():
+    # Arriving around noon: lunch, then the temple when it reopens at 4 pm.
+    fort = _p(10, "Alamparai Fort", "Historical", 12.268, 80.000)
+    temple = _p(11, "Mukunda Nayanar Temple", "Temple", 12.617, 80.195)
+    plan = plan_trip([temple], fort, days=2, start_time="09:00", end_time="19:00")
+    assert len(plan["days"]) == 1
+    visit = [e for e in plan["days"][0]["entries"] if e["kind"] == "visit"][-1]
+    assert visit["start_time"] >= "16:00" and visit["lunch_before"]
